@@ -1,0 +1,5 @@
+cmake_minimum_required (VERSION 2.6)
+project (NavXTimeStamp)
+include_directories(".")
+add_executable(NavXTimeStamp TimeStamp.cpp)
+target_compile_features(NavXTimeStamp PRIVATE cxx_range_for)
