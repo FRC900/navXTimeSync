@@ -1,1 +1,0 @@
-/usr/bin/c++      CMakeFiles/NavXTimeStamp.dir/TimeStamp.cpp.o  -o NavXTimeStamp -rdynamic 
