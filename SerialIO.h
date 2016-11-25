@@ -22,7 +22,7 @@
 class SerialIO : public IIOProvider {
 
 
-    string serial_port_id;
+    std::string serial_port_id;
     SerialPort *serial_port;
     uint8_t next_integration_control_action;
     bool signal_transmit_integration_control;
@@ -44,7 +44,7 @@ class SerialIO : public IIOProvider {
     double last_valid_packet_time;
 
 public:
-    SerialIO( string port_id,
+    SerialIO( std::string port_id,
               uint8_t update_rate_hz,
               bool processed_data,
               IIOCompleteNotification *notify_sink,

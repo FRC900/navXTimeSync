@@ -8,12 +8,13 @@
 #include <SerialIO.h>
 #include <time.h>
 #include <unistd.h>
+#include <string>
 
 static const double IO_TIMEOUT_SECONDS = 1.0;
 
 #define SERIALIO_DASHBOARD_DEBUG
 
-SerialIO::SerialIO( string port_id,
+SerialIO::SerialIO( std::string port_id,
                     uint8_t update_rate_hz,
                     bool processed_data,
                     IIOCompleteNotification *notify_sink,
@@ -21,8 +22,8 @@ SerialIO::SerialIO( string port_id,
     this->serial_port_id = port_id;
     ypr_update_data = {0};
     gyro_update_data = {0};
-    ahrs_update_data = {0};
-    ahrspos_update_data = {0};
+    ahrs_update_data = {};
+    ahrspos_update_data = {};
     ahrspos_ts_update_data = {};
     board_id = {0};
     board_state = {0};
@@ -62,7 +63,7 @@ SerialPort *SerialIO::GetMaybeCreateSerialPort()
             serial_port->EnableTermination('\n');
             serial_port->Reset();
         } catch (std::exception ex) {
-            /* Error opening serial port. Perhaps it doesn't exist... */
+            printf("ERROR Opening Serial Port!\n");
             serial_port = 0;
         }
     }
@@ -107,16 +108,22 @@ int SerialIO::DecodePacketHandler(char * received_data, int bytes_remaining) {
 
     if ( (packet_length = IMUProtocol::decodeYPRUpdate(received_data, bytes_remaining, ypr_update_data)) > 0) {
         notify_sink->SetYawPitchRoll(ypr_update_data, sensor_timestamp);
+        printf("UPDATING YPR Data\n");
     } else if ( ( packet_length = AHRSProtocol::decodeAHRSPosTSUpdate(received_data, bytes_remaining, ahrspos_ts_update_data)) > 0) {
-        notify_sink->SetAHRSPosData(ahrspos_update_data, ahrspos_ts_update_data.timestamp);
+        notify_sink->SetAHRSPosData(ahrspos_ts_update_data, ahrspos_ts_update_data.timestamp);
+        printf("UPDATING AHRSPosTS Data\n");
     } else if ( ( packet_length = AHRSProtocol::decodeAHRSPosUpdate(received_data, bytes_remaining, ahrspos_update_data)) > 0) {
         notify_sink->SetAHRSPosData(ahrspos_update_data, sensor_timestamp);
+        printf("UPDATING AHRSPos Data\n");
     } else if ( ( packet_length = AHRSProtocol::decodeAHRSUpdate(received_data, bytes_remaining, ahrs_update_data)) > 0) {
         notify_sink->SetAHRSData(ahrs_update_data, sensor_timestamp);
+        printf("UPDATING AHRS Data\n");
     } else if ( ( packet_length = IMUProtocol::decodeGyroUpdate(received_data, bytes_remaining, gyro_update_data)) > 0) {
         notify_sink->SetRawData(gyro_update_data, sensor_timestamp);
+        printf("UPDAING GYRO Data\n");
     } else if ( ( packet_length = AHRSProtocol::decodeBoardIdentityResponse(received_data, bytes_remaining, board_id)) > 0) {
         notify_sink->SetBoardID(board_id);
+        printf("UPDATING ELSE\n");
     } else {
         packet_length = 0;
     }
@@ -124,6 +131,7 @@ int SerialIO::DecodePacketHandler(char * received_data, int bytes_remaining) {
 }
 
 void SerialIO::Run() {
+
     stop = false;
     bool stream_response_received = false;
     double last_stream_command_sent_timestamp = 0.0;
@@ -148,6 +156,8 @@ void SerialIO::Run() {
         printf("SerialPort Run() Port Initialization Exception:  %s\n", ex.what());
     }
 
+
+
     char stream_command[256];
     char integration_control_command[256];
     IMUProtocol::StreamResponse response = {0};
@@ -157,7 +167,7 @@ void SerialIO::Run() {
     int cmd_packet_length = IMUProtocol::encodeStreamCommand( stream_command, update_type, update_rate_hz );
     try {
         serial_port->Reset();
-        serial_port->Write( stream_command, cmd_packet_length );
+        serial_port->Write( stream_command, cmd_packet_length);
         cmd_packet_length = AHRSProtocol::encodeDataGetRequest( stream_command,  AHRS_DATA_TYPE::BOARD_IDENTITY, AHRS_TUNING_VAR_ID::UNSPECIFIED );
         serial_port->Write( stream_command, cmd_packet_length );
         serial_port->Flush();
@@ -167,10 +177,12 @@ void SerialIO::Run() {
         printf("SerialPort Run() Port Send Encode Stream Command Exception:  %s\n", ex.what());
     }
 
+
     int remainder_bytes = 0;
     char received_data[256 * 3];
     char additional_received_data[256];
     char remainder_data[256];
+    
 
     while (!stop) {
         try {
@@ -189,6 +201,7 @@ void SerialIO::Run() {
                     printf("SerialPort Run() IntegrationControl Send Exception:  %s\n", ex.what());
                 }
             }
+
 
             if ( !stop && ( remainder_bytes == 0 ) && ( serial_port->GetBytesReceived() < 1 ) ) {
                 usleep(1000000/update_rate_hz);
@@ -407,12 +420,15 @@ void SerialIO::Run() {
                 // If a stream configuration response has not been received within three seconds
                 // of operation, (re)send a stream configuration request
 
+                std::cout << "Config: " << retransmit_stream_config << " Time: " << (time(0) - last_stream_command_sent_timestamp ) << std::endl;
+
                 if ( retransmit_stream_config ||
                         (!stream_response_received && ((time(0) - last_stream_command_sent_timestamp ) > 3.0 ) ) ) {
                     cmd_packet_length = IMUProtocol::encodeStreamCommand( stream_command, update_type, update_rate_hz );
                     try {
                         ResetSerialPort();
                         last_stream_command_sent_timestamp = time(0);
+                        std::cout << "Retransmitting Stream Command!!!!" << std::endl;
                         serial_port->Write( stream_command, cmd_packet_length );
                         cmd_packet_length = AHRSProtocol::encodeDataGetRequest( stream_command,  AHRS_DATA_TYPE::BOARD_IDENTITY, AHRS_TUNING_VAR_ID::UNSPECIFIED );
                         serial_port->Write( stream_command, cmd_packet_length );
