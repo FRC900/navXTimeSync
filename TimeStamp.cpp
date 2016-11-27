@@ -5,6 +5,7 @@
 #include <AHRS.h>
 #include <chrono>
 #include <thread>
+#include <iomanip>
 
 int main(int argc, char *argv[]) {
     std::cout << "Program Executing\n";
@@ -13,19 +14,17 @@ int main(int argc, char *argv[]) {
 
     printf("Initializing\n");
 
-    while(1 == 1) std::this_thread::sleep_for(std::chrono::seconds(8));
+   
 
     printf("Probably Initialized. %d\n\n", com.IsCalibrating());
 
 
-    std::cout << "Firmware Version: " << com.GetFirmwareVersion() << std::endl;
-    printf("Pitch: %f\n", com.GetPitch());
-    printf("Roll: %f\n", com.GetRoll());
-    printf("Velocity-X: %f\n", com.GetVelocityX());
-    printf("Raw Gyro X: %f\n", com.GetRawGyroX());
-    printf("Accel X: %f\n", com.GetWorldLinearAccelX());
-    printf("Temp (C): %f\n\n", com.GetTempC());
+    std::cout << "Pitch  |  Roll  |  Yaw  |  X-Accel  | Y-Accel  |  Z-Accel  |  Time  |" << std::endl;
 
+    while( 1 == 1){
+    std::cout << std::fixed << std::setprecision(2) << com.GetPitch() << "      " << com.GetRoll() << "   " << com.GetYaw() << "     " <<com.GetWorldLinearAccelX() << "     " << com.GetWorldLinearAccelY() << "       " << com.GetWorldLinearAccelZ() << "      " << com.GetLastSensorTimestamp() << "      " << '\r' << std::flush;
+    std::this_thread::sleep_for(std::chrono::milliseconds(125));
+    }
     printf("Program Execution Complete.\n");
 
     return 0;

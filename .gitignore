@@ -4,3 +4,5 @@ Makefile
 *.o
 *.bin
 *.so
+CMakeCache/
+CMakeCache/*

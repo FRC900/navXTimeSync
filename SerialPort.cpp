@@ -25,7 +25,12 @@ class SerialPort {
 
     public:
 
-    SerialPort(int baudRate, std::string id) {
+    SerialPort(int baudRate, std::string id)
+    {
+        Init(baudRate, id);
+    }
+
+    void Init(int baudRate, std::string id) {
 
 
         int USB = open(id.c_str(), O_RDWR| O_NOCTTY);
@@ -45,14 +50,14 @@ class SerialPort {
 
         //tty.c_cflag = CS8|CREAD|CLOCAL;
 
-        tty.c_cflag &= ~CRTSCTS;
+        //tty.c_cflag &= ~CRTSCTS;
         tty.c_cc[VMIN] = 1;
         tty.c_cc[VTIME] = 10;
 
         tty.c_cflag |= CREAD | CLOCAL;
 
         cfmakeraw(&tty);
-        tcflush(USB, TCIFLUSH);
+        tcflush(this->fd, TCIOFLUSH);
         if(tcsetattr(USB,TCSANOW,&tty) != 0) std::cout << "Failed to initialize serial.";
 
         this->fd = USB;
@@ -66,6 +71,7 @@ class SerialPort {
     void SetTimeout(int timeout) {
         this->timeout = timeout;
         tty.c_cc[VTIME] = timeout*10;
+        cfmakeraw(&tty);
         if(tcsetattr(this->fd,TCSANOW,&tty) != 0) std::cout << "Failed to initialize serial.";        
     }
 
@@ -77,20 +83,15 @@ class SerialPort {
 
 
     void Flush() {
-        tcflush(this->fd, TCIFLUSH);
+        tcflush(this->fd, TCOFLUSH);
     }
 
     void Write(char *data, int length) {
-        printf("START WRITE \n");
         int n_written = 0, spot = 0;
         do {
-            std::cout << "Writing " << data[spot] << std::endl;
-            n_written = write( this->fd, &data[spot], 1 );
-            printf("Written!\n");
+            n_written = write( this->fd, &data[spot], length );
             spot += n_written;
-            std::cout << "Test2" << std::endl;
-        } while (data[spot-1] != '\r' && n_written > 0); 
-        printf("END WRITE \n");
+        } while (data[spot-1] != terminationChar); 
     }
 
     int GetBytesReceived() {
@@ -102,14 +103,13 @@ class SerialPort {
     int Read(char *data, int size) {
         int n = 0, loc = 0;
         char buf = '\0';
-
-        memset(data, '\0', this->ReadBufferSize);
+        memset(data, '\0', size);
 
         do {
-            n = read(this->fd, &buf, 1 );
+            n = read(this->fd, &buf, 1);
             sprintf( &data[loc], "%c", buf );
             loc += n;
-        } while( buf != terminationChar && n > 0);
+        } while( buf != terminationChar && loc < size);
 
         if (n < 0) {
             std::cout << "Error reading: " << strerror(errno) << std::endl;

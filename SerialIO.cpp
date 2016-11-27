@@ -108,22 +108,22 @@ int SerialIO::DecodePacketHandler(char * received_data, int bytes_remaining) {
 
     if ( (packet_length = IMUProtocol::decodeYPRUpdate(received_data, bytes_remaining, ypr_update_data)) > 0) {
         notify_sink->SetYawPitchRoll(ypr_update_data, sensor_timestamp);
-        printf("UPDATING YPR Data\n");
+        //printf("UPDATING YPR Data\n");
     } else if ( ( packet_length = AHRSProtocol::decodeAHRSPosTSUpdate(received_data, bytes_remaining, ahrspos_ts_update_data)) > 0) {
         notify_sink->SetAHRSPosData(ahrspos_ts_update_data, ahrspos_ts_update_data.timestamp);
-        printf("UPDATING AHRSPosTS Data\n");
+        //printf("UPDATING AHRSPosTS Data\n");
     } else if ( ( packet_length = AHRSProtocol::decodeAHRSPosUpdate(received_data, bytes_remaining, ahrspos_update_data)) > 0) {
         notify_sink->SetAHRSPosData(ahrspos_update_data, sensor_timestamp);
-        printf("UPDATING AHRSPos Data\n");
+        //printf("UPDATING AHRSPos Data\n");
     } else if ( ( packet_length = AHRSProtocol::decodeAHRSUpdate(received_data, bytes_remaining, ahrs_update_data)) > 0) {
         notify_sink->SetAHRSData(ahrs_update_data, sensor_timestamp);
-        printf("UPDATING AHRS Data\n");
+        //printf("UPDATING AHRS Data\n");
     } else if ( ( packet_length = IMUProtocol::decodeGyroUpdate(received_data, bytes_remaining, gyro_update_data)) > 0) {
         notify_sink->SetRawData(gyro_update_data, sensor_timestamp);
-        printf("UPDAING GYRO Data\n");
+        //printf("UPDAING GYRO Data\n");
     } else if ( ( packet_length = AHRSProtocol::decodeBoardIdentityResponse(received_data, bytes_remaining, board_id)) > 0) {
         notify_sink->SetBoardID(board_id);
-        printf("UPDATING ELSE\n");
+        //printf("UPDATING ELSE\n");
     } else {
         packet_length = 0;
     }
@@ -167,6 +167,7 @@ void SerialIO::Run() {
     int cmd_packet_length = IMUProtocol::encodeStreamCommand( stream_command, update_type, update_rate_hz );
     try {
         serial_port->Reset();
+        std::cout << "Initial Write" << std::endl;
         serial_port->Write( stream_command, cmd_packet_length);
         cmd_packet_length = AHRSProtocol::encodeDataGetRequest( stream_command,  AHRS_DATA_TYPE::BOARD_IDENTITY, AHRS_TUNING_VAR_ID::UNSPECIFIED );
         serial_port->Write( stream_command, cmd_packet_length );
@@ -196,6 +197,7 @@ void SerialIO::Run() {
                 next_integration_control_action = 0;
                 cmd_packet_length = AHRSProtocol::encodeIntegrationControlCmd( integration_control_command, integration_control );
                 try {
+                    std::cout << "No idea where this write is..." << std::endl;
                     serial_port->Write( integration_control_command, cmd_packet_length );
                 } catch (std::exception ex) {
                     printf("SerialPort Run() IntegrationControl Send Exception:  %s\n", ex.what());
@@ -420,7 +422,7 @@ void SerialIO::Run() {
                 // If a stream configuration response has not been received within three seconds
                 // of operation, (re)send a stream configuration request
 
-                std::cout << "Config: " << retransmit_stream_config << " Time: " << (time(0) - last_stream_command_sent_timestamp ) << std::endl;
+                //std::cout << "Config: " << retransmit_stream_config << " Time: " << (time(0) - last_stream_command_sent_timestamp ) << " " << last_stream_command_sent_timestamp << std::endl;
 
                 if ( retransmit_stream_config ||
                         (!stream_response_received && ((time(0) - last_stream_command_sent_timestamp ) > 3.0 ) ) ) {
@@ -450,7 +452,7 @@ void SerialIO::Run() {
                 /* streaming packet type is configured correctly.                                */
 
                 if ( ( time(0) - last_valid_packet_time ) > 1.0 ) {
-                    last_stream_command_sent_timestamp = 0.0;
+                    last_stream_command_sent_timestamp = time(0);
                     stream_response_received = false;
                 }
             } else {

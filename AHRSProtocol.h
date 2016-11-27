@@ -698,8 +698,6 @@ public:
 
             update.yaw = IMURegisters::decodeProtocol1616Float(&buffer[AHRSPOS_TS_UPDATE_YAW_VALUE_INDEX]);
             update.pitch = IMURegisters::decodeProtocol1616Float(&buffer[AHRSPOS_TS_UPDATE_PITCH_VALUE_INDEX]);
-            printf("%f\n", update.pitch);
-            printf("%c\n", buffer[AHRSPOS_TS_UPDATE_PITCH_VALUE_INDEX]);
             update.roll = IMURegisters::decodeProtocol1616Float(&buffer[AHRSPOS_TS_UPDATE_ROLL_VALUE_INDEX]);
             update.compass_heading = IMURegisters::decodeProtocol1616Float(&buffer[AHRSPOS_TS_UPDATE_HEADING_VALUE_INDEX]);
             update.altitude = IMURegisters::decodeProtocol1616Float(&buffer[AHRSPOS_TS_UPDATE_ALTITUDE_VALUE_INDEX]);

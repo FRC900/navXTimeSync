@@ -42,7 +42,7 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
     /***********************************************************/
 
     void SetYawPitchRoll(IMUProtocol::YPRUpdate& ypr_update, long sensor_timestamp) {
-        printf("Setting pitch value to %f", ypr_update.pitch);
+        //printf("Setting pitch value to %f", ypr_update.pitch);
         ahrs->yaw               	= ypr_update.yaw;
         ahrs->pitch             	= ypr_update.pitch;
         ahrs->roll              	= ypr_update.roll;
@@ -52,7 +52,7 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
 
     void SetAHRSPosData(AHRSProtocol::AHRSPosUpdate& ahrs_update, long sensor_timestamp) {
         /* Update base IMU class variables */
-        printf("Setting pitch to: %f\n", ahrs_update.pitch);
+        //printf("Setting pitch to: %f\n", ahrs_update.pitch);
         ahrs->yaw                    = ahrs_update.yaw;
         ahrs->pitch                  = ahrs_update.pitch;
         ahrs->roll                   = ahrs_update.roll;
