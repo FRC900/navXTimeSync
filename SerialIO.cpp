@@ -167,7 +167,7 @@ void SerialIO::Run() {
     int cmd_packet_length = IMUProtocol::encodeStreamCommand( stream_command, update_type, update_rate_hz );
     try {
         serial_port->Reset();
-        std::cout << "Initial Write" << std::endl;
+        //std::cout << "Initial Write" << std::endl;
         serial_port->Write( stream_command, cmd_packet_length);
         cmd_packet_length = AHRSProtocol::encodeDataGetRequest( stream_command,  AHRS_DATA_TYPE::BOARD_IDENTITY, AHRS_TUNING_VAR_ID::UNSPECIFIED );
         serial_port->Write( stream_command, cmd_packet_length );
@@ -197,7 +197,7 @@ void SerialIO::Run() {
                 next_integration_control_action = 0;
                 cmd_packet_length = AHRSProtocol::encodeIntegrationControlCmd( integration_control_command, integration_control );
                 try {
-                    std::cout << "No idea where this write is..." << std::endl;
+                    //std::cout << "No idea where this write is..." << std::endl;
                     serial_port->Write( integration_control_command, cmd_packet_length );
                 } catch (std::exception ex) {
                     printf("SerialPort Run() IntegrationControl Send Exception:  %s\n", ex.what());
@@ -430,7 +430,7 @@ void SerialIO::Run() {
                     try {
                         ResetSerialPort();
                         last_stream_command_sent_timestamp = time(0);
-                        std::cout << "Retransmitting Stream Command!!!!" << std::endl;
+                        //std::cout << "Retransmitting Stream Command!!!!" << std::endl;
                         serial_port->Write( stream_command, cmd_packet_length );
                         cmd_packet_length = AHRSProtocol::encodeDataGetRequest( stream_command,  AHRS_DATA_TYPE::BOARD_IDENTITY, AHRS_TUNING_VAR_ID::UNSPECIFIED );
                         serial_port->Write( stream_command, cmd_packet_length );
@@ -468,6 +468,9 @@ void SerialIO::Run() {
             ResetSerialPort();
         }
     }
+
+    serial_port->Close();
+
 }
 
 bool SerialIO::IsConnected() {

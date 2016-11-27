@@ -180,6 +180,8 @@ public:
     int GetActualUpdateRate();
     int GetRequestedUpdateRate();
 
+    void Close();
+
 private:
     void SerialInit(std::string serial_port_id, AHRS::SerialDataType data_type, uint8_t update_rate_hz);
     void commonInit( uint8_t update_rate_hz );

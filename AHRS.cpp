@@ -1320,4 +1320,6 @@ int AHRS::GetRequestedUpdateRate() {
     return (int)update_rate_hz;
 }
 
-
+void AHRS::Close() {
+    io->Stop();    
+}

@@ -127,4 +127,8 @@ class SerialPort {
         tcflush(this->fd, TCIOFLUSH);
     }
 
+    void Close() {
+        close(this->fd);
+    }
+
 };
