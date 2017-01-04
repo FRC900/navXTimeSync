@@ -1229,6 +1229,7 @@ double AHRS::PIDGet() {
 void *AHRS::ThreadFunc(void *threadarg) {
     IIOProvider *io_provider = (IIOProvider*)threadarg;
     io_provider->Run();
+	return NULL;
 }
 
 /**
