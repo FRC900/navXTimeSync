@@ -88,10 +88,13 @@ class SerialPort {
 
     void Write(char *data, int length) {
         int n_written = 0, spot = 0;
+	printf("Write started.\n");
         do {
+
             n_written = write( this->fd, &data[spot], length );
             spot += n_written;
         } while (data[spot-1] != terminationChar); 
+	printf("Write complete.\n");
     }
 
     int GetBytesReceived() {

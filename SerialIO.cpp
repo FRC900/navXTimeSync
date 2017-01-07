@@ -198,7 +198,8 @@ void SerialIO::Run() {
                 cmd_packet_length = AHRSProtocol::encodeIntegrationControlCmd( integration_control_command, integration_control );
                 try {
                     //std::cout << "No idea where this write is..." << std::endl;
-                    serial_port->Write( integration_control_command, cmd_packet_length );
+		    //DEBUG-TODO: Determine if this is needed
+                    //serial_port->Write( integration_control_command, cmd_packet_length );
                 } catch (std::exception ex) {
                     printf("SerialPort Run() IntegrationControl Send Exception:  %s\n", ex.what());
                 }
@@ -423,9 +424,10 @@ void SerialIO::Run() {
                 // of operation, (re)send a stream configuration request
 
                 //std::cout << "Config: " << retransmit_stream_config << " Time: " << (time(0) - last_stream_command_sent_timestamp ) << " " << last_stream_command_sent_timestamp << std::endl;
-
-                if ( retransmit_stream_config ||
-                        (!stream_response_received && ((time(0) - last_stream_command_sent_timestamp ) > 3.0 ) ) ) {
+		
+		//DEBUG-TODO: Enable this if we really need it
+                if ( false && (retransmit_stream_config ||
+                        (!stream_response_received && ((time(0) - last_stream_command_sent_timestamp ) > 3.0 ) ) ) ) {
                     cmd_packet_length = IMUProtocol::encodeStreamCommand( stream_command, update_type, update_rate_hz );
                     try {
                         ResetSerialPort();
