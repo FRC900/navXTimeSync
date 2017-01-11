@@ -207,7 +207,8 @@ void SerialIO::Run() {
 
 
             if ( !stop && ( remainder_bytes == 0 ) && ( serial_port->GetBytesReceived() < 1 ) ) {
-                usleep(1000000/update_rate_hz);
+                //usleep(1000000/update_rate_hz);
+		serial_port->WaitForData();
             }
 
             int packets_received = 0;
@@ -444,7 +445,8 @@ void SerialIO::Run() {
                 else {
                     // If no bytes remain in the buffer, and not awaiting a response, sleep a bit
                     if ( stream_response_received && ( serial_port->GetBytesReceived() == 0 ) ) {
-                        usleep(1000000/update_rate_hz);
+		        serial_port->WaitForData();
+                        
                     }
                 }
 

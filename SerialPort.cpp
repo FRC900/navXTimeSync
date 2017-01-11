@@ -88,13 +88,11 @@ class SerialPort {
 
     void Write(char *data, int length) {
         int n_written = 0, spot = 0;
-	printf("Write started.\n");
         do {
 
             n_written = write( this->fd, &data[spot], length );
             spot += n_written;
         } while (data[spot-1] != terminationChar); 
-	printf("Write complete.\n");
     }
 
     int GetBytesReceived() {
@@ -124,6 +122,17 @@ class SerialPort {
             //std::cout << "Response: " << data  << std::endl;
         }
         return loc;
+    }
+
+    void WaitForData()
+    {
+	fd_set readfds;
+	struct timeval tv;
+	FD_ZERO(&readfds);
+	FD_SET(this->fd, &readfds);
+	tv.tv_sec = 0;
+	tv.tv_usec = 100000;
+	select(this->fd + 1, &readfds, NULL, NULL, &tv);
     }
 
     void Reset() {
