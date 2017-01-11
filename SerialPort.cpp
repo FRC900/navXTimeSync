@@ -34,6 +34,11 @@ class SerialPort {
 
 
         int USB = open(id.c_str(), O_RDWR| O_NOCTTY);
+        if (USB < 0)
+        {
+            std::cerr << "Could not open " << id.c_str() << " as a TTY:";
+            perror("");
+        }
         
         memset(&tty, 0, sizeof(tty));
         this->baudRate = baudRate;
@@ -58,10 +63,9 @@ class SerialPort {
 
         cfmakeraw(&tty);
         tcflush(this->fd, TCIOFLUSH);
-        if(tcsetattr(USB,TCSANOW,&tty) != 0) std::cout << "Failed to initialize serial.";
+        if(tcsetattr(USB,TCSANOW,&tty) != 0) std::cout << "Failed to initialize serial." << std::endl;
 
         this->fd = USB;
-
     }
 
     void SetReadBufferSize(int size) {
@@ -72,7 +76,7 @@ class SerialPort {
         this->timeout = timeout;
         tty.c_cc[VTIME] = timeout*10;
         cfmakeraw(&tty);
-        if(tcsetattr(this->fd,TCSANOW,&tty) != 0) std::cout << "Failed to initialize serial.";        
+        if(tcsetattr(this->fd,TCSANOW,&tty) != 0) std::cout << "Failed to initialize serial in SetTimeout." << std::endl;;
     }
 
 
@@ -91,7 +95,8 @@ class SerialPort {
         do {
 
             n_written = write( this->fd, &data[spot], length );
-            spot += n_written;
+            if (n_written > 0)
+                spot += n_written;
         } while (data[spot-1] != terminationChar); 
     }
 

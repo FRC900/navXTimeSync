@@ -20,13 +20,13 @@ SerialIO::SerialIO( std::string port_id,
                     IIOCompleteNotification *notify_sink,
                     IBoardCapabilities *board_capabilities ) {
     this->serial_port_id = port_id;
-    ypr_update_data = {0};
-    gyro_update_data = {0};
+    ypr_update_data = {0., 0., 0., 0.};
+    gyro_update_data = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0.};
     ahrs_update_data = {};
     ahrspos_update_data = {};
     ahrspos_ts_update_data = {};
-    board_id = {0};
-    board_state = {0};
+    board_id = {0, 0, 0, 0, 0, {0}};
+    board_state = {0, 0, 0, 0, 0, 0, 0, 0};
     this->notify_sink = notify_sink;
     this->board_capabilities = board_capabilities;
     serial_port = 0;
@@ -160,9 +160,9 @@ void SerialIO::Run() {
 
     char stream_command[256];
     char integration_control_command[256];
-    IMUProtocol::StreamResponse response = {0};
-    AHRSProtocol::IntegrationControl integration_control = {0};
-    AHRSProtocol::IntegrationControl integration_control_response = {0};
+    IMUProtocol::StreamResponse response = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    AHRSProtocol::IntegrationControl integration_control = {0, 0};
+    AHRSProtocol::IntegrationControl integration_control_response = {0, 0};
 
     int cmd_packet_length = IMUProtocol::encodeStreamCommand( stream_command, update_type, update_rate_hz );
     try {
