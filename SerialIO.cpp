@@ -132,6 +132,8 @@ int SerialIO::DecodePacketHandler(char * received_data, int bytes_remaining) {
 
 void SerialIO::Run() {
 
+	if (!serial_port)
+		return;
     stop = false;
     bool stream_response_received = false;
     double last_stream_command_sent_timestamp = 0.0;

@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <iostream>
+#include <stdexcept>
 
 
 class SerialPort {
@@ -38,6 +39,7 @@ class SerialPort {
         {
             std::cerr << "Could not open " << id.c_str() << " as a TTY:";
             perror("");
+			throw std::runtime_error("");
         }
         
         memset(&tty, 0, sizeof(tty));
@@ -62,10 +64,10 @@ class SerialPort {
         tty.c_cflag |= CREAD | CLOCAL;
 
         cfmakeraw(&tty);
+        this->fd = USB;
         tcflush(this->fd, TCIOFLUSH);
         if(tcsetattr(USB,TCSANOW,&tty) != 0) std::cout << "Failed to initialize serial." << std::endl;
 
-        this->fd = USB;
     }
 
     void SetReadBufferSize(int size) {
@@ -131,13 +133,13 @@ class SerialPort {
 
     void WaitForData()
     {
-	fd_set readfds;
-	struct timeval tv;
-	FD_ZERO(&readfds);
-	FD_SET(this->fd, &readfds);
-	tv.tv_sec = 0;
-	tv.tv_usec = 100000;
-	select(this->fd + 1, &readfds, NULL, NULL, &tv);
+		fd_set readfds;
+		struct timeval tv;
+		FD_ZERO(&readfds);
+		FD_SET(this->fd, &readfds);
+		tv.tv_sec = 0;
+		tv.tv_usec = 100000;
+		select(this->fd + 1, &readfds, NULL, NULL, &tv);
     }
 
     void Reset() {
