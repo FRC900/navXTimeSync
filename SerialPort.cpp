@@ -9,6 +9,8 @@
 #include <errno.h>
 #include <iostream>
 #include <stdexcept>
+#include <thread>
+#include <chrono>
 
 
 class SerialPort {
@@ -23,6 +25,7 @@ class SerialPort {
         int baudRate;
         int fd;
         struct termios tty;
+	int err;
 
     public:
 
@@ -112,11 +115,32 @@ class SerialPort {
         int n = 0, loc = 0;
         char buf = '\0';
         memset(data, '\0', size);
+	err = 0;
 
         do {
             n = read(this->fd, &buf, 1);
             sprintf( &data[loc], "%c", buf );
             loc += n;
+	
+	    if(n == 0) err++;
+
+	    if(err > 100)
+	    {
+		err = 0;
+		Reset();
+		Close();
+	        std::this_thread::sleep_for(std::chrono::milliseconds(10000));	
+		Init(this->baudRate, this->id);
+		SetTimeout(this->timeout);
+		SetReadBufferSize(this->ReadBufferSize);
+		EnableTermination(this->terminationChar);
+		Reset();
+		break;
+		
+	    }
+
+
+
         } while( buf != terminationChar && loc < size);
 
         if (n < 0) {

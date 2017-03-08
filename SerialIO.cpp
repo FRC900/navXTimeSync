@@ -185,10 +185,20 @@ void SerialIO::Run() {
     char received_data[256 * 3];
     char additional_received_data[256];
     char remainder_data[256];
+
+    int updater = 0;
     
 
     while (!stop) {
         try {
+
+	    if(updater == 100)
+	    {
+    	        int cmd_packet_length = IMUProtocol::encodeStreamCommand( stream_command, update_type, update_rate_hz );
+                serial_port->Write( stream_command, cmd_packet_length);
+                updater = 0;
+	    }
+	    updater++;
 
             // Wait, with delays to conserve CPU resources, until
             // bytes have arrived.
