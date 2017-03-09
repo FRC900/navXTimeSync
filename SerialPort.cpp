@@ -129,7 +129,7 @@ class SerialPort {
 		err = 0;
 		Reset();
 		Close();
-	        std::this_thread::sleep_for(std::chrono::milliseconds(10000));	
+	        std::this_thread::sleep_for(std::chrono::milliseconds(30000));	
 		Init(this->baudRate, this->id);
 		SetTimeout(this->timeout);
 		SetReadBufferSize(this->ReadBufferSize);
