@@ -315,21 +315,21 @@ public:
     /* The following functions assume a little-endian processor */
     /************************************************************/
 
-    static inline uint16_t decodeProtocolUint16( char *uint16_bytes ) {
+    static inline uint16_t decodeProtocolUint16( const char *uint16_bytes ) {
         return *((uint16_t *)uint16_bytes);
     }
     static inline void encodeProtocolUint16( uint16_t val, char *uint16_bytes) {
         *((uint16_t *)uint16_bytes) = val;
     }
 
-    static inline int16_t decodeProtocolInt16( char *int16_bytes ) {
+    static inline int16_t decodeProtocolInt16( const char *int16_bytes ) {
         return *((int16_t *)int16_bytes);
     }
     static inline void encodeProtocolInt16( int16_t val, char *int16_bytes) {
         *((int16_t *)int16_bytes) = val;
     }
 
-    static inline int32_t decodeProtocolInt32( char *int32_bytes ) {
+    static inline int32_t decodeProtocolInt32( const char *int32_bytes ) {
         return *((int32_t *)int32_bytes);
     }
     static inline void encodeProtocolInt32( int32_t val, char *int32_bytes) {
@@ -337,7 +337,7 @@ public:
     }
 
     /* -327.68 to +327.68 */
-    static inline float decodeProtocolSignedHundredthsFloat( char *uint8_signed_angle_bytes ) {
+    static inline float decodeProtocolSignedHundredthsFloat( const char *uint8_signed_angle_bytes ) {
         float signed_angle = (float)decodeProtocolInt16(uint8_signed_angle_bytes);
         signed_angle /= 100;
         return signed_angle;
@@ -362,7 +362,7 @@ public:
     }
 
     /* 0 to 655.35 */
-    static inline float decodeProtocolUnsignedHundredthsFloat( char *uint8_unsigned_hundredths_float ) {
+    static inline float decodeProtocolUnsignedHundredthsFloat( const char *uint8_unsigned_hundredths_float ) {
         float unsigned_float = (float)decodeProtocolUint16(uint8_unsigned_hundredths_float);
         unsigned_float /= 100;
         return unsigned_float;
@@ -373,7 +373,7 @@ public:
     }
 
     /* -32.768 to +32.768 */
-    static inline float decodeProtocolSignedThousandthsFloat( char *uint8_signed_angle_bytes ) {
+    static inline float decodeProtocolSignedThousandthsFloat( const char *uint8_signed_angle_bytes ) {
         float signed_angle = (float)decodeProtocolInt16(uint8_signed_angle_bytes);
         signed_angle /= 1000;
         return signed_angle;
@@ -384,7 +384,7 @@ public:
     }
 
     /* In units of -1 to 1, multiplied by 16384 */
-    static inline float decodeProtocolRatio( char *uint8_ratio ) {
+    static inline float decodeProtocolRatio( const char *uint8_ratio ) {
         float ratio = (float)decodeProtocolInt16(uint8_ratio);
         ratio /= 32768.0f;
         return ratio;
@@ -395,7 +395,7 @@ public:
     }
 
     /* <int16>.<uint16> (-32768.9999 to 32767.9999) */
-    static float decodeProtocol1616Float( char *uint8_16_16_bytes ) {
+    static float decodeProtocol1616Float( const char *uint8_16_16_bytes ) {
         float result = (float)decodeProtocolInt32( uint8_16_16_bytes );
         result /= 65536.0f;
         return result;
@@ -426,7 +426,7 @@ public:
         }
     }
 
-    static inline uint8_t getCRCWithTable( uint8_t* table, uint8_t message[], uint8_t length )
+    static inline uint8_t getCRCWithTable( const uint8_t* table, const uint8_t* message, uint8_t length )
     {
         uint8_t i, crc = 0;
 
@@ -438,7 +438,7 @@ public:
         return crc;
     }
 
-    static uint8_t getCRC(uint8_t message[], uint8_t length)
+    static uint8_t getCRC( const uint8_t* message, uint8_t length)
     {
         uint8_t i, j, crc = 0;
 

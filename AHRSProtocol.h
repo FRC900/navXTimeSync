@@ -363,7 +363,7 @@ public:
         return INTEGRATION_CONTROL_CMD_MESSAGE_LENGTH;
     }
 
-    static int decodeIntegrationControlCmd( char *buffer, int length, uint8_t& action, int32_t& parameter)
+    static int decodeIntegrationControlCmd( const char *buffer, int length, uint8_t& action, int32_t& parameter)
     {
         if ( length < INTEGRATION_CONTROL_CMD_MESSAGE_LENGTH ) return 0;
         if ( ( buffer[0] == PACKET_START_CHAR ) &&
@@ -396,7 +396,7 @@ public:
         return INTEGRATION_CONTROL_RESP_MESSAGE_LENGTH;
     }
 
-    static int decodeIntegrationControlResponse( char *buffer, int length, struct IntegrationControl& rsp)
+    static int decodeIntegrationControlResponse( const char *buffer, int length, struct IntegrationControl& rsp)
     {
         if ( length < INTEGRATION_CONTROL_RESP_MESSAGE_LENGTH ) return 0;
         if ( ( buffer[0] == PACKET_START_CHAR ) &&
@@ -430,7 +430,7 @@ public:
         return FUSION_TUNING_CMD_MESSAGE_LENGTH;
     }
 
-    static int decodeTuningVariableCmd( char *buffer, int length, AHRS_DATA_ACTION& getset, AHRS_TUNING_VAR_ID& id, float& val )
+    static int decodeTuningVariableCmd( const char *buffer, int length, AHRS_DATA_ACTION& getset, AHRS_TUNING_VAR_ID& id, float& val )
     {
         if ( length < FUSION_TUNING_CMD_MESSAGE_LENGTH ) return 0;
         if ( ( buffer[0] == PACKET_START_CHAR ) &&
@@ -502,7 +502,7 @@ public:
         return AHRS_UPDATE_MESSAGE_LENGTH;
     }
 
-    static int decodeAHRSUpdate( char *buffer, int length, struct AHRSUpdate& update)
+    static int decodeAHRSUpdate( const char *buffer, int length, struct AHRSUpdate& update)
     {
         if ( length < AHRS_UPDATE_MESSAGE_LENGTH ) return 0;
         if ( ( buffer[0] == PACKET_START_CHAR ) &&
@@ -594,7 +594,7 @@ public:
         return AHRSPOS_UPDATE_MESSAGE_LENGTH;
     }
 
-    static int decodeAHRSPosUpdate( char *buffer, int length, struct AHRSPosUpdate& update)
+    static int decodeAHRSPosUpdate( const char *buffer, int length, struct AHRSPosUpdate& update)
     {
         if ( length < AHRSPOS_UPDATE_MESSAGE_LENGTH ) return 0;
         if ( ( buffer[0] == PACKET_START_CHAR ) &&
@@ -686,7 +686,7 @@ public:
         return AHRSPOS_TS_UPDATE_MESSAGE_LENGTH;
     }
 
-    static int decodeAHRSPosTSUpdate( char *buffer, int length, struct AHRSPosTSUpdate& update)
+    static int decodeAHRSPosTSUpdate( const char *buffer, int length, struct AHRSPosTSUpdate& update)
     {
         if ( length < AHRSPOS_TS_UPDATE_MESSAGE_LENGTH ) return 0;
         if ( ( buffer[0] == PACKET_START_CHAR ) &&
@@ -750,7 +750,7 @@ public:
         return MAG_CAL_CMD_MESSAGE_LENGTH;
     }
 
-    static int decodeMagCalCommand( char *buffer, int length,
+    static int decodeMagCalCommand( const char *buffer, int length,
             AHRS_DATA_ACTION& action,
             int16_t *bias,
             float *matrix,
@@ -793,7 +793,7 @@ public:
         return DATA_SET_RESPONSE_MESSAGE_LENGTH;
     }
 
-    static int decodeDataSetResponse( char *buffer, int length, AHRS_DATA_TYPE &type, AHRS_TUNING_VAR_ID &subtype, uint8_t& status )
+    static int decodeDataSetResponse( const char *buffer, int length, AHRS_DATA_TYPE &type, AHRS_TUNING_VAR_ID &subtype, uint8_t& status )
     {
         if ( length < DATA_SET_RESPONSE_MESSAGE_LENGTH ) return 0;
         if ( ( buffer[0] == PACKET_START_CHAR ) &&
@@ -826,7 +826,7 @@ public:
         return DATA_REQUEST_MESSAGE_LENGTH;
     }
 
-    static int decodeDataGetRequest( char *buffer, int length, AHRS_DATA_TYPE& type, AHRS_TUNING_VAR_ID& subtype )
+    static int decodeDataGetRequest( const char *buffer, int length, AHRS_DATA_TYPE& type, AHRS_TUNING_VAR_ID& subtype )
     {
         if ( length < DATA_REQUEST_MESSAGE_LENGTH ) return 0;
         if ( ( buffer[0] == PACKET_START_CHAR ) &&
@@ -867,7 +867,7 @@ public:
         return BOARD_IDENTITY_RESPONSE_MESSAGE_LENGTH;
     }
 
-    static int decodeBoardIdentityResponse( char *buffer, int length,  struct BoardID& update )
+    static int decodeBoardIdentityResponse( const char *buffer, int length,  struct BoardID& update )
     {
         if ( length < BOARD_IDENTITY_RESPONSE_MESSAGE_LENGTH ) return 0;
         if ( ( buffer[0] == PACKET_START_CHAR ) &&

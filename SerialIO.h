@@ -49,21 +49,21 @@ public:
               bool processed_data,
               IIOCompleteNotification *notify_sink,
               IBoardCapabilities *board_capabilities );
-    bool IsConnected();
-    double GetByteCount();
-    double GetUpdateCount();
+    bool IsConnected(void) const;
+    double GetByteCount(void) const;
+    double GetUpdateCount(void) const;
     void SetUpdateRateHz(uint8_t update_rate);
-    void ZeroYaw();
-    void ZeroDisplacement();
-    void Run();
-    void Stop();
+    void ZeroYaw(void);
+    void ZeroDisplacement(void);
+    void Run(void);
+    void Stop(void);
 private:
 
-    SerialPort *ResetSerialPort();
-    SerialPort *GetMaybeCreateSerialPort();
+    SerialPort *ResetSerialPort(void);
+    SerialPort *GetMaybeCreateSerialPort(void);
     void EnqueueIntegrationControlMessage(uint8_t action);
-    void DispatchStreamResponse(IMUProtocol::StreamResponse& response);
-    int DecodePacketHandler(char * received_data, int bytes_remaining);
+    void DispatchStreamResponse(const IMUProtocol::StreamResponse& response);
+    int DecodePacketHandler(const char * received_data, int bytes_remaining);
 };
 
 #endif /* SRC_SERIALIO_H_ */

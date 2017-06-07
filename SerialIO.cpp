@@ -41,7 +41,7 @@ SerialIO::SerialIO( std::string port_id,
     }
 }
 
-SerialPort *SerialIO::ResetSerialPort()
+SerialPort *SerialIO::ResetSerialPort(void)
 {
     if (serial_port != 0) {
         try {
@@ -55,7 +55,7 @@ SerialPort *SerialIO::ResetSerialPort()
     return serial_port;
 }
 
-SerialPort *SerialIO::GetMaybeCreateSerialPort()
+SerialPort *SerialIO::GetMaybeCreateSerialPort(void)
 {
     if (serial_port == 0) {
         try {
@@ -78,7 +78,7 @@ void SerialIO::EnqueueIntegrationControlMessage(uint8_t action)
     signal_transmit_integration_control = true;
 }
 
-void SerialIO::DispatchStreamResponse(IMUProtocol::StreamResponse& response) {
+void SerialIO::DispatchStreamResponse(const IMUProtocol::StreamResponse& response) {
     board_state.cal_status = (uint8_t) (response.flags & NAV6_FLAG_MASK_CALIBRATION_STATE);
     board_state.capability_flags = (int16_t) (response.flags & ~NAV6_FLAG_MASK_CALIBRATION_STATE);
     board_state.op_status = 0x04; /* TODO:  Create a symbol for this */
@@ -104,7 +104,7 @@ void SerialIO::DispatchStreamResponse(IMUProtocol::StreamResponse& response) {
     }
 }
 
-int SerialIO::DecodePacketHandler(char * received_data, int bytes_remaining) {
+int SerialIO::DecodePacketHandler(const char * received_data, int bytes_remaining) {
     int packet_length;
     long sensor_timestamp = 0; /* Serial protocols do not provide sensor timestamps. */
 
@@ -132,7 +132,7 @@ int SerialIO::DecodePacketHandler(char * received_data, int bytes_remaining) {
     return packet_length;
 }
 
-void SerialIO::Run() {
+void SerialIO::Run(void) {
 
 	if (!serial_port)
 		return;
@@ -481,16 +481,16 @@ void SerialIO::Run() {
 
 }
 
-bool SerialIO::IsConnected() {
+bool SerialIO::IsConnected(void) const {
     double time_since_last_update = time(0) - this->last_valid_packet_time;
     return time_since_last_update <= IO_TIMEOUT_SECONDS;
 }
 
-double SerialIO::GetByteCount() {
+double SerialIO::GetByteCount(void) const {
     return byte_count;
 }
 
-double SerialIO::GetUpdateCount() {
+double SerialIO::GetUpdateCount(void) const {
     return update_count;
 }
 
@@ -498,16 +498,16 @@ void SerialIO::SetUpdateRateHz(uint8_t update_rate) {
     update_rate_hz = update_rate;
 }
 
-void SerialIO::ZeroYaw() {
+void SerialIO::ZeroYaw(void) {
     EnqueueIntegrationControlMessage(NAVX_INTEGRATION_CTL_RESET_YAW);
 }
 
-void SerialIO::ZeroDisplacement() {
+void SerialIO::ZeroDisplacement(void) {
     EnqueueIntegrationControlMessage( NAVX_INTEGRATION_CTL_RESET_DISP_X |
                                       NAVX_INTEGRATION_CTL_RESET_DISP_Y |
                                       NAVX_INTEGRATION_CTL_RESET_DISP_Z );
 }
 
-void SerialIO::Stop() {
+void SerialIO::Stop(void) {
     stop = true;
 }

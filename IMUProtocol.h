@@ -292,7 +292,7 @@ public:
         return STREAM_RESPONSE_MESSAGE_LENGTH;
     }
 
-    static int decodeStreamResponse( char *buffer, int length, struct StreamResponse& rsp )
+    static int decodeStreamResponse( const char *buffer, int length, struct StreamResponse& rsp )
     {
         if ( length < STREAM_RESPONSE_MESSAGE_LENGTH ) return 0;
         if ( ( buffer[0] == PACKET_START_CHAR ) && ( buffer[1] == MSG_ID_STREAM_RESPONSE ) )
@@ -314,7 +314,7 @@ public:
         return 0;
     }
 
-    static int decodeStreamCommand( char *buffer, int length, char& stream_type, unsigned char& update_rate_hz )
+    static int decodeStreamCommand( const char *buffer, int length, char& stream_type, unsigned char& update_rate_hz )
     {
         if ( length < STREAM_CMD_MESSAGE_LENGTH ) return 0;
         if ( ( buffer[0] == '!' ) && ( buffer[1] == MSGID_STREAM_CMD ) )
@@ -329,7 +329,7 @@ public:
         return 0;
     }
 
-    static int decodeYPRUpdate( char *buffer, int length, struct YPRUpdate& update )
+    static int decodeYPRUpdate( const char *buffer, int length, struct YPRUpdate& update )
     {
         if ( length < YPR_UPDATE_MESSAGE_LENGTH ) return 0;
         if ( ( buffer[0] == '!' ) && ( buffer[1] == 'y' ) )
@@ -345,7 +345,7 @@ public:
         return 0;
     }
 
-    static int decodeQuaternionUpdate( char *buffer, int length, struct QuaternionUpdate& update )
+    static int decodeQuaternionUpdate( const char *buffer, int length, struct QuaternionUpdate& update )
     {
         if ( length < QUATERNION_UPDATE_MESSAGE_LENGTH ) return 0;
         if ( ( buffer[0] == PACKET_START_CHAR ) && ( buffer[1] == MSGID_QUATERNION_UPDATE ) )
@@ -368,7 +368,7 @@ public:
         return 0;
     }
 
-    static int decodeGyroUpdate( char *buffer, int length, struct GyroUpdate& update )
+    static int decodeGyroUpdate( const char *buffer, int length, struct GyroUpdate& update )
     {
         if ( length < GYRO_UPDATE_MESSAGE_LENGTH ) return 0;
         if ( ( buffer[0] == PACKET_START_CHAR ) && ( buffer[1] == MSGID_GYRO_UPDATE ) )
@@ -436,7 +436,7 @@ protected:
         sprintf(&buff[0],"%04X", value );
     }
 
-    static uint16_t decodeProtocolUint16( char *uint16_string )
+    static uint16_t decodeProtocolUint16( const char *uint16_string )
     {
         uint16_t decoded_uint16 = 0;
         unsigned int shift_left = 12;
@@ -450,7 +450,7 @@ protected:
     }
 
     /* 0 to 655.35 */
-    static inline float decodeProtocolUnsignedHundredthsFloat( char *uint8_unsigned_hundredths_float ) {
+    static inline float decodeProtocolUnsignedHundredthsFloat( const char *uint8_unsigned_hundredths_float ) {
         float unsigned_float = (float)decodeProtocolUint16(uint8_unsigned_hundredths_float);
         unsigned_float /= 100;
         return unsigned_float;
@@ -460,7 +460,7 @@ protected:
         encodeProtocolUint16(input_as_uint,uint8_unsigned_hundredths_float);
     }
 
-    static bool verifyChecksum( char *buffer, int content_length )
+    static bool verifyChecksum( const char *buffer, int content_length )
     {
         // Calculate Checksum
         unsigned char checksum = 0;
@@ -475,7 +475,7 @@ protected:
         return ( checksum == decoded_checksum );
     }
 
-    static unsigned char decodeUint8( char *checksum )
+    static unsigned char decodeUint8( const char *checksum )
     {
         unsigned char first_digit = checksum[0] <= '9' ? checksum[0] - '0' : ((checksum[0] - 'A') + 10);
         unsigned char second_digit = checksum[1] <= '9' ? checksum[1] - '0' : ((checksum[1] - 'A') + 10);
@@ -483,7 +483,7 @@ protected:
         return decoded_checksum;
     }
 
-    static float decodeProtocolFloat( char *buffer )
+    static float decodeProtocolFloat( const char *buffer )
     {
         char temp[PROTOCOL_FLOAT_LENGTH+1];
         for ( int i = 0; i < PROTOCOL_FLOAT_LENGTH; i++ )
