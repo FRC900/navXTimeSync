@@ -5,10 +5,12 @@
  *      Author: Scott
  */
 
-#include <SerialIO.h>
+#include <cstring>
+#include <string>
 #include <time.h>
 #include <unistd.h>
-#include <string>
+
+#include "SerialIO.h"
 
 static const double IO_TIMEOUT_SECONDS = 1.0;
 
@@ -210,7 +212,7 @@ void SerialIO::Run() {
 
             if ( !stop && ( remainder_bytes == 0 ) && ( serial_port->GetBytesReceived() < 1 ) ) {
                 //usleep(1000000/update_rate_hz);
-		serial_port->WaitForData();
+				serial_port->WaitForData();
             }
 
             int packets_received = 0;

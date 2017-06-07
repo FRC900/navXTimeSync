@@ -10,14 +10,14 @@
 
 //include "WPILIb.h"
 
-#include "SerialPort.cpp"
-#include "IIOProvider.h"
-#include <stdint.h>
-#include <string.h>
+#include <cstdint>
+
 #include "AHRSProtocol.h"
-#include "IMUProtocol.h"
-#include "IIOCompleteNotification.h"
 #include "IBoardCapabilities.h"
+#include "IIOCompleteNotification.h"
+#include "IIOProvider.h"
+#include "IMUProtocol.h"
+#include "SerialPort.h"
 
 class SerialIO : public IIOProvider {
 
