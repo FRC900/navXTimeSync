@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Program Executing\n";
     signal(SIGINT, handle_sig);
 
-    AHRS com = AHRS("/dev/ttyACM0");
+    AHRS com("/dev/ttyACM0");
 
     printf("Initializing\n\n");
 
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Pitch  |  Roll  |  Yaw  |  X-Accel  | Y-Accel  |  Z-Accel  |  Time  |" << std::endl;
 
     while( 1 == 1){
-        std::cout << std::fixed << std::setprecision(2) << com.GetPitch() << "      " << com.GetRoll() << "   " << com.GetYaw() << "     " <<com.GetWorldLinearAccelX() << "     " << com.GetWorldLinearAccelY() << "       " << com.GetWorldLinearAccelZ() << "      " << com.GetLastSensorTimestamp() << "      " << '\r' << std::flush;
+        std::cout << std::fixed << std::setprecision(2) << std::setw(6) << com.GetPitch() << "  " << std::setw(6) << com.GetRoll() << "   " << std::setw(7) << com.GetYaw() << "   " << std::setw(6) << com.GetWorldLinearAccelX() << "    " << std::setw(6) << com.GetWorldLinearAccelY() << "      " << std::setw(6) << com.GetWorldLinearAccelZ() << "      " << com.GetLastSensorTimestamp() << "      " << '\r' << std::flush;
         std::this_thread::sleep_for(std::chrono::milliseconds(15));
         if(sflag){
             sflag = 0;
