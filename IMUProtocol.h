@@ -25,6 +25,8 @@ THE SOFTWARE.
 #ifndef _IMU_PROTOCOL_H_
 #define _IMU_PROTOCOL_H_
 
+#include <cstdint>
+
 #define PACKET_START_CHAR       '!'
 #define CHECKSUM_LENGTH         2   /* 8-bit checksump, all bytes before checksum */
 #define TERMINATOR_LENGTH       2   /* Carriage Return, Line Feed */
