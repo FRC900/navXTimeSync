@@ -870,7 +870,7 @@ float AHRS::GetVelocityZ(void) {
  */
 float AHRS::GetDisplacementX(void) {
 	std::unique_lock<std::mutex> l(mutex);
-    return (ahrs_internal->IsDisplacementSupported() ? displacement[0] : integrator->GetVelocityX());
+    return (ahrs_internal->IsDisplacementSupported() ? displacement[0] : integrator->GetDisplacementX());
 }
 
 /**
@@ -885,7 +885,7 @@ float AHRS::GetDisplacementX(void) {
  */
 float AHRS::GetDisplacementY(void) {
 	std::unique_lock<std::mutex> l(mutex);
-    return (ahrs_internal->IsDisplacementSupported() ? displacement[1] : integrator->GetVelocityY());
+    return (ahrs_internal->IsDisplacementSupported() ? displacement[1] : integrator->GetDisplacementY());
 }
 
 /**
