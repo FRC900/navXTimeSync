@@ -11,10 +11,10 @@
 class IBoardCapabilities {
 public:
     IBoardCapabilities(void) {}
-    virtual bool IsOmniMountSupported(void) const = 0;
-    virtual bool IsBoardYawResetSupported(void) const = 0;
-    virtual bool IsDisplacementSupported(void) const = 0;
-    virtual bool IsAHRSPosTimestampSupported(void) const = 0;
+    virtual bool IsOmniMountSupported(void) = 0;
+    virtual bool IsBoardYawResetSupported(void) = 0;
+    virtual bool IsDisplacementSupported(void) = 0;
+    virtual bool IsAHRSPosTimestampSupported(void) = 0;
 };
 
 #endif /* SRC_IBOARDCAPABILITIES_H_ */

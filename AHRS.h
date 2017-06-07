@@ -8,9 +8,11 @@
 #ifndef SRC_AHRS_H_
 #define SRC_AHRS_H_
 
-#include "ITimestampedDataSubscriber.h"
 #include <memory>
+#include <mutex>
 #include <string>
+
+#include "ITimestampedDataSubscriber.h"
 
 class IIOProvider;
 class ContinuousAngleTracker;
@@ -48,29 +50,29 @@ public:
 
 private:
     friend class AHRSInternal;
-    AHRSInternal *      ahrs_internal;
+    AHRSInternal *ahrs_internal;
 
-    volatile float      yaw;
-    volatile float      pitch;
-    volatile float      roll;
-    volatile float      compass_heading;
-    volatile float      world_linear_accel_x;
-    volatile float      world_linear_accel_y;
-    volatile float      world_linear_accel_z;
-    volatile float      mpu_temp_c;
-    volatile float      fused_heading;
-    volatile float      altitude;
-    volatile float      baro_pressure;
-    volatile bool       is_moving;
-    volatile bool       is_rotating;
-    volatile float      baro_sensor_temp_c;
-    volatile bool       altitude_valid;
-    volatile bool       is_magnetometer_calibrated;
-    volatile bool       magnetic_disturbance;
-    volatile float    	quaternionW;
-    volatile float    	quaternionX;
-    volatile float    	quaternionY;
-    volatile float    	quaternionZ;
+    float      yaw;
+    float      pitch;
+    float      roll;
+    float      compass_heading;
+    float      world_linear_accel_x;
+    float      world_linear_accel_y;
+    float      world_linear_accel_z;
+    float      mpu_temp_c;
+    float      fused_heading;
+    float      altitude;
+    float      baro_pressure;
+    bool       is_moving;
+    bool       is_rotating;
+    float      baro_sensor_temp_c;
+    bool       altitude_valid;
+    bool       is_magnetometer_calibrated;
+    bool       magnetic_disturbance;
+    float    	quaternionW;
+    float    	quaternionX;
+    float    	quaternionY;
+    float    	quaternionZ;
 
     /* Integrated Data */
     float velocity[3];
@@ -78,35 +80,36 @@ private:
 
 
     /* Raw Data */
-    volatile int16_t    raw_gyro_x;
-    volatile int16_t    raw_gyro_y;
-    volatile int16_t    raw_gyro_z;
-    volatile int16_t    raw_accel_x;
-    volatile int16_t    raw_accel_y;
-    volatile int16_t    raw_accel_z;
-    volatile int16_t    cal_mag_x;
-    volatile int16_t    cal_mag_y;
-    volatile int16_t    cal_mag_z;
+    int16_t    raw_gyro_x;
+    int16_t    raw_gyro_y;
+    int16_t    raw_gyro_z;
+    int16_t    raw_accel_x;
+    int16_t    raw_accel_y;
+    int16_t    raw_accel_z;
+    int16_t    cal_mag_x;
+    int16_t    cal_mag_y;
+    int16_t    cal_mag_z;
 
     /* Configuration/Status */
-    volatile uint8_t    update_rate_hz;
-    volatile int16_t    accel_fsr_g;
-    volatile int16_t    gyro_fsr_dps;
-    volatile int16_t    capability_flags;
-    volatile uint8_t    op_status;
-    volatile int16_t    sensor_status;
-    volatile uint8_t    cal_status;
-    volatile uint8_t    selftest_status;
+    uint8_t    update_rate_hz;
+    int16_t    accel_fsr_g;
+    int16_t    gyro_fsr_dps;
+    int16_t    capability_flags;
+    uint8_t    op_status;
+    int16_t    sensor_status;
+    uint8_t    cal_status;
+    uint8_t    selftest_status;
 
     /* Board ID */
-    volatile uint8_t    board_type;
-    volatile uint8_t    hw_rev;
-    volatile uint8_t    fw_ver_major;
-    volatile uint8_t    fw_ver_minor;
+    uint8_t    board_type;
+    uint8_t    hw_rev;
+    uint8_t    fw_ver_major;
+    uint8_t    fw_ver_minor;
 
-    long                last_sensor_timestamp;
-    double              last_update_time;
+    long       last_sensor_timestamp;
+    double     last_update_time;
 
+	std::mutex mutex;
 
     InertialDataIntegrator *integrator;
     ContinuousAngleTracker *yaw_angle_tracker;
@@ -123,64 +126,64 @@ public:
 
     AHRS(const std::string &serial_port_id, AHRS::SerialDataType data_type, uint8_t update_rate_hz);
 
-    float  GetPitch() const;
-    float  GetRoll() const;
-    float  GetYaw() const;
-    float  GetCompassHeading() const;
-    void   ZeroYaw() const;
-    bool   IsCalibrating() const;
-    bool   IsConnected() const;
-    double GetByteCount() const;
-    double GetUpdateCount() const;
-    long   GetLastSensorTimestamp() const;
-    float  GetWorldLinearAccelX() const;
-    float  GetWorldLinearAccelY() const;
-    float  GetWorldLinearAccelZ() const;
-    bool   IsMoving() const;
-    bool   IsRotating() const;
-    float  GetBarometricPressure() const;
-    float  GetAltitude() const;
-    bool   IsAltitudeValid() const;
-    float  GetFusedHeading() const;
-    bool   IsMagneticDisturbance() const;
-    bool   IsMagnetometerCalibrated() const;
-    float  GetQuaternionW() const;
-    float  GetQuaternionX() const;
-    float  GetQuaternionY() const;
-    float  GetQuaternionZ() const;
-    void   ResetDisplacement();
+    float  GetPitch(void);
+    float  GetRoll(void);
+    float  GetYaw(void);
+    float  GetCompassHeading(void);
+    void   ZeroYaw(void);
+    bool   IsCalibrating(void);
+    bool   IsConnected(void) const;
+    double GetByteCount(void) const;
+    double GetUpdateCount(void) const;
+    long   GetLastSensorTimestamp(void);
+    float  GetWorldLinearAccelX(void);
+    float  GetWorldLinearAccelY(void);
+    float  GetWorldLinearAccelZ(void);
+    bool   IsMoving(void);
+    bool   IsRotating(void);
+    float  GetBarometricPressure(void);
+    float  GetAltitude(void);
+    bool   IsAltitudeValid(void);
+    float  GetFusedHeading(void);
+    bool   IsMagneticDisturbance(void);
+    bool   IsMagnetometerCalibrated(void);
+    float  GetQuaternionW(void);
+    float  GetQuaternionX(void);
+    float  GetQuaternionY(void);
+    float  GetQuaternionZ(void);
+    void   ResetDisplacement(void);
     void   UpdateDisplacement( float accel_x_g, float accel_y_g,
                                int update_rate_hz, bool is_moving );
-    float  GetVelocityX() const;
-    float  GetVelocityY() const;
-    float  GetVelocityZ() const;
-    float  GetDisplacementX() const;
-    float  GetDisplacementY() const;
-    float  GetDisplacementZ() const;
-    double GetAngle() const;
-    double GetRate() const;
-    void   Reset();
-    float  GetRawGyroX() const;
-    float  GetRawGyroY() const;
-    float  GetRawGyroZ() const;
-    float  GetRawAccelX() const;
-    float  GetRawAccelY() const;
-    float  GetRawAccelZ() const;
-    float  GetRawMagX() const;
-    float  GetRawMagY() const;
-    float  GetRawMagZ() const;
-    float  GetPressure() const;
-    float  GetTempC() const;
-    AHRS::BoardYawAxis GetBoardYawAxis() const;
-    std::string GetFirmwareVersion() const;
+    float  GetVelocityX(void);
+    float  GetVelocityY(void);
+    float  GetVelocityZ(void);
+    float  GetDisplacementX(void);
+    float  GetDisplacementY(void);
+    float  GetDisplacementZ(void);
+    double GetAngle(void);
+    double GetRate(void);
+    void   Reset(void);
+    float  GetRawGyroX(void);
+    float  GetRawGyroY(void);
+    float  GetRawGyroZ(void);
+    float  GetRawAccelX(void);
+    float  GetRawAccelY(void);
+    float  GetRawAccelZ(void);
+    float  GetRawMagX(void);
+    float  GetRawMagY(void);
+    float  GetRawMagZ(void);
+    float  GetPressure(void);
+    float  GetTempC(void);
+    AHRS::BoardYawAxis GetBoardYawAxis(void);
+    std::string GetFirmwareVersion(void);
 
     bool RegisterCallback( ITimestampedDataSubscriber *callback, void *callback_context);
     bool DeregisterCallback( ITimestampedDataSubscriber *callback );
 
-    int GetActualUpdateRate() const;
-    int GetRequestedUpdateRate() const;
+    int GetActualUpdateRate(void);
+    int GetRequestedUpdateRate(void);
 
-    void Close();
+    void Close(void);
 
 private:
     void SerialInit(const std::string &serial_port_id, AHRS::SerialDataType data_type, uint8_t update_rate_hz);
@@ -188,14 +191,14 @@ private:
     static void *ThreadFunc(void *threadarg);
 
     /* LiveWindowSendable implementation */
-    std::string GetSmartDashboardType() const;
-    void StartLiveWindowMode();
-    void StopLiveWindowMode();
+    std::string GetSmartDashboardType(void) const;
+    void StartLiveWindowMode(void);
+    void StopLiveWindowMode(void);
 
     /* PIDSource implementation */
-    double PIDGet() const;
+    double PIDGet(void);
 
-    uint8_t GetActualUpdateRateInternal(uint8_t update_rate) const;
+    uint8_t GetActualUpdateRateInternal(uint8_t update_rate);
 };
 
 #endif /* SRC_AHRS_H_ */

@@ -44,6 +44,7 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
 
     void SetYawPitchRoll(const IMUProtocol::YPRUpdate& ypr_update, long sensor_timestamp) {
         //printf("Setting pitch value to %f", ypr_update.pitch);
+		std::unique_lock<std::mutex> l(ahrs->mutex);
         ahrs->yaw               	= ypr_update.yaw;
         ahrs->pitch             	= ypr_update.pitch;
         ahrs->roll              	= ypr_update.roll;
@@ -54,11 +55,15 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
     void SetAHRSPosData(const AHRSProtocol::AHRSPosUpdate& ahrs_update, long sensor_timestamp) {
         /* Update base IMU class variables */
         //printf("Setting pitch to: %f\n", ahrs_update.pitch);
+		{
+		std::unique_lock<std::mutex> l(ahrs->mutex);
         ahrs->yaw                    = ahrs_update.yaw;
         ahrs->pitch                  = ahrs_update.pitch;
         ahrs->roll                   = ahrs_update.roll;
         ahrs->compass_heading        = ahrs_update.compass_heading;
+
         ahrs->yaw_offset_tracker->UpdateHistory(ahrs_update.yaw);
+        ahrs->yaw_angle_tracker->NextAngle(ahrs_update.yaw);
 
         /* Update AHRS class variables */
 
@@ -106,6 +111,16 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
 
         ahrs->last_sensor_timestamp	= sensor_timestamp;
 
+        ahrs->velocity[0]     = ahrs_update.vel_x;
+        ahrs->velocity[1]     = ahrs_update.vel_y;
+        ahrs->velocity[2]     = ahrs_update.vel_z;
+        ahrs->displacement[0] = ahrs_update.disp_x;
+        ahrs->displacement[1] = ahrs_update.disp_y;
+        ahrs->displacement[2] = ahrs_update.disp_z;
+
+        ahrs->last_sensor_timestamp	= sensor_timestamp;
+		}
+
         /* Notify external data arrival subscribers, if any. */
         for (int i = 0; i < MAX_NUM_CALLBACKS; i++) {
             ITimestampedDataSubscriber *callback = ahrs->callbacks[i];
@@ -118,18 +133,10 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
             }
         }
 
-        ahrs->velocity[0]     = ahrs_update.vel_x;
-        ahrs->velocity[1]     = ahrs_update.vel_y;
-        ahrs->velocity[2]     = ahrs_update.vel_z;
-        ahrs->displacement[0] = ahrs_update.disp_x;
-        ahrs->displacement[1] = ahrs_update.disp_y;
-        ahrs->displacement[2] = ahrs_update.disp_z;
-
-        ahrs->yaw_angle_tracker->NextAngle(ahrs->GetYaw());
-        ahrs->last_sensor_timestamp	= sensor_timestamp;
     }
 
     void SetRawData(const AHRSProtocol::GyroUpdate& raw_data_update, long sensor_timestamp) {
+		std::unique_lock<std::mutex> l(ahrs->mutex);
         ahrs->raw_gyro_x     = raw_data_update.gyro_x;
         ahrs->raw_gyro_y     = raw_data_update.gyro_y;
         ahrs->raw_gyro_z     = raw_data_update.gyro_z;
@@ -145,12 +152,16 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
 
     void SetAHRSData(const AHRSProtocol::AHRSUpdate& ahrs_update, long sensor_timestamp) {
         /* Update base IMU class variables */
+		{
+		std::unique_lock<std::mutex> l(ahrs->mutex);
 
         ahrs->yaw                    = ahrs_update.yaw;
         ahrs->pitch                  = ahrs_update.pitch;
         ahrs->roll                   = ahrs_update.roll;
         ahrs->compass_heading        = ahrs_update.compass_heading;
+
         ahrs->yaw_offset_tracker->UpdateHistory(ahrs_update.yaw);
+        ahrs->yaw_angle_tracker->NextAngle(ahrs_update.yaw);
 
         /* Update AHRS class variables */
 
@@ -202,6 +213,7 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
         ahrs->quaternionZ                = ahrs_update.quat_z;
 
         ahrs->last_sensor_timestamp	= sensor_timestamp;
+		}
 
         /* Notify external data arrival subscribers, if any. */
         for (int i = 0; i < MAX_NUM_CALLBACKS; i++) {
@@ -220,10 +232,10 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
                 ahrs->update_rate_hz,
                 ahrs->is_moving);
 
-        ahrs->yaw_angle_tracker->NextAngle(ahrs->GetYaw());
     }
 
     void SetBoardID(const AHRSProtocol::BoardID& board_id) {
+		std::unique_lock<std::mutex> l(ahrs->mutex);
         ahrs->board_type = board_id.type;
         ahrs->hw_rev = board_id.hw_rev;
         ahrs->fw_ver_major = board_id.fw_ver_major;
@@ -231,6 +243,7 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
     }
 
     void SetBoardState(const IIOCompleteNotification::BoardState& board_state) {
+		std::unique_lock<std::mutex> l(ahrs->mutex);
         ahrs->update_rate_hz = board_state.update_rate_hz;
         ahrs->accel_fsr_g = board_state.accel_fsr_g;
         ahrs->gyro_fsr_dps = board_state.gyro_fsr_dps;
@@ -244,22 +257,22 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
     /***********************************************************/
     /* IBoardCapabilities Interface Implementation        */
     /***********************************************************/
-    bool IsOmniMountSupported(void) const
+    bool IsOmniMountSupported(void)
     {
        return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_OMNIMOUNT) !=0) ? true : false);
     }
 
-    bool IsBoardYawResetSupported(void) const
+    bool IsBoardYawResetSupported(void)
     {
         return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_YAW_RESET) != 0) ? true : false);
     }
 
-    bool IsDisplacementSupported(void) const
+    bool IsDisplacementSupported(void)
     {
         return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_VEL_AND_DISP) != 0) ? true : false);
     }
 
-    bool IsAHRSPosTimestampSupported(void) const
+    bool IsAHRSPosTimestampSupported(void)
     {
     	return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_AHRSPOS_TS) != 0) ? true : false);
     }
@@ -381,7 +394,8 @@ AHRS::AHRS(const std::string &serial_port_id) {
  * the X Axis.
  * @return The current pitch value in degrees (-180 to 180).
  */
-float AHRS::GetPitch() const {
+float AHRS::GetPitch(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return pitch;
 }
 
@@ -391,7 +405,8 @@ float AHRS::GetPitch() const {
  * the X Axis.
  * @return The current roll value in degrees (-180 to 180).
  */
-float AHRS::GetRoll() const {
+float AHRS::GetRoll(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return roll;
 }
 
@@ -405,7 +420,8 @@ float AHRS::GetRoll() const {
  * invoking the zeroYaw() method.
  * @return The current yaw value in degrees (-180 to 180).
  */
-float AHRS::GetYaw() const {
+float AHRS::GetYaw(void) {
+	std::unique_lock<std::mutex> l(mutex);
     if ( ahrs_internal->IsBoardYawResetSupported() ) {
         return this->yaw;
     } else {
@@ -427,7 +443,8 @@ float AHRS::GetYaw() const {
  * was generated.
  * @return The current tilt-compensated compass heading, in degrees (0-360).
  */
-float AHRS::GetCompassHeading() const {
+float AHRS::GetCompassHeading(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return compass_heading;
 }
 
@@ -439,7 +456,7 @@ float AHRS::GetCompassHeading() const {
  * subtracted from subsequent yaw values reported by
  * the getYaw() method.
  */
-void AHRS::ZeroYaw() const {
+void AHRS::ZeroYaw(void) {
     if ( ahrs_internal->IsBoardYawResetSupported() ) {
         io->ZeroYaw();
     } else {
@@ -463,7 +480,8 @@ void AHRS::ZeroYaw() const {
  * @return Returns true if the sensor is currently automatically
  * calibrating the gyro and accelerometer sensors.
  */
-bool AHRS::IsCalibrating() const {
+bool AHRS::IsCalibrating(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return !((cal_status &
                 NAVX_CAL_STATUS_IMU_CAL_STATE_MASK) ==
                     NAVX_CAL_STATUS_IMU_CAL_COMPLETE);
@@ -477,7 +495,7 @@ bool AHRS::IsCalibrating() const {
  * @return Returns true if a valid update has been recently received
  * from the sensor.
  */
-bool AHRS::IsConnected() const {
+bool AHRS::IsConnected(void) const {
     return io->IsConnected();
 }
 
@@ -491,7 +509,7 @@ bool AHRS::IsConnected() const {
  * misconfiguration.
  * @return The number of bytes received from the sensor.
  */
-double AHRS::GetByteCount() const {
+double AHRS::GetByteCount(void) const {
     return io->GetByteCount();
 }
 
@@ -501,7 +519,7 @@ double AHRS::GetByteCount() const {
  * at the same rate indicated by the configured update rate.
  * @return The number of valid updates received from the sensor.
  */
-double AHRS::GetUpdateCount() const {
+double AHRS::GetUpdateCount(void) const {
     return io->GetUpdateCount();
 }
 
@@ -514,7 +532,8 @@ double AHRS::GetUpdateCount() const {
  * are used.
  * @return The sensor timestamp corresponding to the current AHRS sensor data.
  */
-long AHRS::GetLastSensorTimestamp() const {
+long AHRS::GetLastSensorTimestamp(void) {
+	std::unique_lock<std::mutex> l(mutex);
 	return this->last_sensor_timestamp;
 }
 
@@ -529,8 +548,9 @@ long AHRS::GetLastSensorTimestamp() const {
  *<p>
  * @return Current world linear acceleration in the X-axis (in G).
  */
-float AHRS::GetWorldLinearAccelX() const
+float AHRS::GetWorldLinearAccelX(void)
 {
+	std::unique_lock<std::mutex> l(mutex);
     return this->world_linear_accel_x;
 }
 
@@ -545,8 +565,9 @@ float AHRS::GetWorldLinearAccelX() const
  *<p>
  * @return Current world linear acceleration in the Y-axis (in G).
  */
-float AHRS::GetWorldLinearAccelY() const
+float AHRS::GetWorldLinearAccelY(void)
 {
+	std::unique_lock<std::mutex> l(mutex);
     return this->world_linear_accel_y;
 }
 
@@ -561,8 +582,9 @@ float AHRS::GetWorldLinearAccelY() const
  *<p>
  * @return Current world linear acceleration in the Z-axis (in G).
  */
-float AHRS::GetWorldLinearAccelZ() const
+float AHRS::GetWorldLinearAccelZ(void)
 {
+	std::unique_lock<std::mutex> l(mutex);
     return this->world_linear_accel_z;
 }
 
@@ -574,9 +596,10 @@ float AHRS::GetWorldLinearAccelZ() const
  *<p>
  * @return Returns true if the sensor is currently detecting motion.
  */
-bool AHRS::IsMoving() const
+bool AHRS::IsMoving(void)
 {
-    return is_moving;
+	std::unique_lock<std::mutex> l(mutex);
+    return this->is_moving;
 }
 
 /**
@@ -590,9 +613,10 @@ bool AHRS::IsMoving() const
  *<p>
  * @return Returns true if the sensor is currently detecting motion.
  */
-bool AHRS::IsRotating() const
+bool AHRS::IsRotating(void)
 {
-    return is_rotating;
+	std::unique_lock<std::mutex> l(mutex);
+    return this->is_rotating;
 }
 
 /**
@@ -603,9 +627,10 @@ bool AHRS::IsRotating() const
  * whether this value is valid, see isAltitudeValid().
  * @return Returns current barometric pressure (navX Aero only).
  */
-float AHRS::GetBarometricPressure() const
+float AHRS::GetBarometricPressure(void)
 {
-    return baro_pressure;
+	std::unique_lock<std::mutex> l(mutex);
+    return this->baro_pressure;
 }
 
 /**
@@ -620,8 +645,9 @@ float AHRS::GetBarometricPressure() const
  * @return Returns current altitude in meters (as long as the sensor includes
  * an installed on-board pressure sensor).
  */
-float AHRS::GetAltitude() const
+float AHRS::GetAltitude(void)
 {
+	std::unique_lock<std::mutex> l(mutex);
     return altitude;
 }
 
@@ -635,8 +661,9 @@ float AHRS::GetAltitude() const
  *<p>
  * @return Returns true if a working pressure sensor is installed.
  */
-bool AHRS::IsAltitudeValid() const
+bool AHRS::IsAltitudeValid(void)
 {
+	std::unique_lock<std::mutex> l(mutex);
     return this->altitude_valid;
 }
 
@@ -655,9 +682,10 @@ bool AHRS::IsAltitudeValid() const
  * has recently rotated less than the Compass Noise Bandwidth (~2 degrees).
  * @return Fused Heading in Degrees (range 0-360)
  */
-float AHRS::GetFusedHeading() const
+float AHRS::GetFusedHeading(void)
 {
-    return fused_heading;
+	std::unique_lock<std::mutex> l(mutex);
+    return this->fused_heading;
 }
 
 /**
@@ -669,9 +697,10 @@ float AHRS::GetFusedHeading() const
  * not yet been calibrated; see isMagnetometerCalibrated().
  * @return true if a magnetic disturbance is detected (or the magnetometer is uncalibrated).
  */
-bool AHRS::IsMagneticDisturbance() const
+bool AHRS::IsMagneticDisturbance(void)
 {
-    return magnetic_disturbance;
+	std::unique_lock<std::mutex> l(mutex);
+    return this->magnetic_disturbance;
 }
 
 /**
@@ -685,9 +714,10 @@ bool AHRS::IsMagneticDisturbance() const
  *<p>
  * @return Returns true if magnetometer calibration has been performed.
  */
-bool AHRS::IsMagnetometerCalibrated() const
+bool AHRS::IsMagnetometerCalibrated(void)
 {
-    return is_magnetometer_calibrated;
+	std::unique_lock<std::mutex> l(mutex);
+    return this->is_magnetometer_calibrated;
 }
 
 /* Unit Quaternions */
@@ -704,8 +734,9 @@ bool AHRS::IsMagnetometerCalibrated() const
  * For more information on Quaternions and their use, please see this <a href=https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation>definition</a>.
  * @return Returns the imaginary portion (W) of the quaternion.
  */
-float AHRS::GetQuaternionW() const {
-    return quaternionW;
+float AHRS::GetQuaternionW(void) {
+	std::unique_lock<std::mutex> l(mutex);
+    return this->quaternionW;
 }
 /**
  * Returns the real portion (X axis) of the Orientation Quaternion which
@@ -719,8 +750,9 @@ float AHRS::GetQuaternionW() const {
  * For more information on Quaternions and their use, please see this <a href=https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation>description</a>.
  * @return Returns the real portion (X) of the quaternion.
  */
-float AHRS::GetQuaternionX() const {
-    return quaternionX;
+float AHRS::GetQuaternionX(void) {
+	std::unique_lock<std::mutex> l(mutex);
+    return this->quaternionX;
 }
 /**
  * Returns the real portion (Y axis) of the Orientation Quaternion which
@@ -737,8 +769,9 @@ float AHRS::GetQuaternionX() const {
  *
  * @return Returns the real portion (Y) of the quaternion.
  */
-float AHRS::GetQuaternionY() const {
-    return quaternionY;
+float AHRS::GetQuaternionY(void) {
+	std::unique_lock<std::mutex> l(mutex);
+    return this->quaternionY;
 }
 /**
  * Returns the real portion (Z axis) of the Orientation Quaternion which
@@ -755,15 +788,16 @@ float AHRS::GetQuaternionY() const {
  *
  * @return Returns the real portion (Z) of the quaternion.
  */
-float AHRS::GetQuaternionZ() const {
-    return quaternionZ;
+float AHRS::GetQuaternionZ(void) {
+	std::unique_lock<std::mutex> l(mutex);
+    return this->quaternionZ;
 }
 
 /**
  * Zeros the displacement integration variables.   Invoke this at the moment when
  * integration begins.
  */
-void AHRS::ResetDisplacement() {
+void AHRS::ResetDisplacement(void) {
     if (ahrs_internal->IsDisplacementSupported() ) {
         io->ZeroDisplacement();
     }
@@ -793,7 +827,8 @@ void AHRS::UpdateDisplacement( float accel_x_g, float accel_y_g,
  * resulting velocities are not known to be very accurate.
  * @return Current Velocity (in meters/squared).
  */
-float AHRS::GetVelocityX() const {
+float AHRS::GetVelocityX(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return (ahrs_internal->IsDisplacementSupported() ? velocity[0] : integrator->GetVelocityX());
 }
 
@@ -805,7 +840,8 @@ float AHRS::GetVelocityX() const {
  * resulting velocities are not known to be very accurate.
  * @return Current Velocity (in meters/squared).
  */
-float AHRS::GetVelocityY() const {
+float AHRS::GetVelocityY(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return (ahrs_internal->IsDisplacementSupported() ? velocity[1] : integrator->GetVelocityY());
 }
 
@@ -817,7 +853,8 @@ float AHRS::GetVelocityY() const {
  * resulting velocities are not known to be very accurate.
  * @return Current Velocity (in meters/squared).
  */
-float AHRS::GetVelocityZ() const {
+float AHRS::GetVelocityZ(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return (ahrs_internal->IsDisplacementSupported() ? velocity[2] : 0.f);
 }
 
@@ -831,7 +868,8 @@ float AHRS::GetVelocityZ() const {
  * increases quickly as time progresses.
  * @return Displacement since last reset (in meters).
  */
-float AHRS::GetDisplacementX() const {
+float AHRS::GetDisplacementX(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return (ahrs_internal->IsDisplacementSupported() ? displacement[0] : integrator->GetVelocityX());
 }
 
@@ -845,7 +883,8 @@ float AHRS::GetDisplacementX() const {
  * increases quickly as time progresses.
  * @return Displacement since last reset (in meters).
  */
-float AHRS::GetDisplacementY() const {
+float AHRS::GetDisplacementY(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return (ahrs_internal->IsDisplacementSupported() ? displacement[1] : integrator->GetVelocityY());
 }
 
@@ -859,7 +898,8 @@ float AHRS::GetDisplacementY() const {
  * increases quickly as time progresses.
  * @return Displacement since last reset (in meters).
  */
-float AHRS::GetDisplacementZ() const {
+float AHRS::GetDisplacementZ(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return (ahrs_internal->IsDisplacementSupported() ? displacement[2] : 0.f);
 }
 
@@ -966,7 +1006,8 @@ void AHRS::commonInit( uint8_t update_rate_hz ) {
  * from the Z-axis (yaw) gyro.
  */
 
-double AHRS::GetAngle() const {
+double AHRS::GetAngle(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return yaw_angle_tracker->GetAngle();
 }
 
@@ -978,7 +1019,8 @@ double AHRS::GetAngle() const {
  * @return The current rate of change in yaw angle (in degrees per second)
  */
 
-double AHRS::GetRate() const {
+double AHRS::GetRate(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return yaw_angle_tracker->GetRate();
 }
 
@@ -989,7 +1031,7 @@ double AHRS::GetRate() const {
  * there is significant drift in the gyro and it needs to be recalibrated
  * after it has been running.
  */
-void AHRS::Reset() {
+void AHRS::Reset(void) {
     ZeroYaw();
 }
 
@@ -1003,7 +1045,8 @@ static const float DEV_UNITS_MAX = 32768.0f;
  *<p>
  * @return Returns the current rotation rate (in degrees/sec).
  */
-float AHRS::GetRawGyroX() const {
+float AHRS::GetRawGyroX(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return this->raw_gyro_x / (DEV_UNITS_MAX / (float)gyro_fsr_dps);
 }
 
@@ -1015,7 +1058,8 @@ float AHRS::GetRawGyroX() const {
  *<p>
  * @return Returns the current rotation rate (in degrees/sec).
  */
-float AHRS::GetRawGyroY() const {
+float AHRS::GetRawGyroY(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return this->raw_gyro_y / (DEV_UNITS_MAX / (float)gyro_fsr_dps);
 }
 
@@ -1027,7 +1071,8 @@ float AHRS::GetRawGyroY() const {
  *<p>
  * @return Returns the current rotation rate (in degrees/sec).
  */
-float AHRS::GetRawGyroZ() const {
+float AHRS::GetRawGyroZ(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return this->raw_gyro_z / (DEV_UNITS_MAX / (float)gyro_fsr_dps);
 }
 
@@ -1040,7 +1085,8 @@ float AHRS::GetRawGyroZ() const {
  *<p>
  * @return Returns the current acceleration rate (in G).
  */
-float AHRS::GetRawAccelX() const {
+float AHRS::GetRawAccelX(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return this->raw_accel_x / (DEV_UNITS_MAX / (float)accel_fsr_g);
 }
 
@@ -1053,7 +1099,8 @@ float AHRS::GetRawAccelX() const {
  *<p>
  * @return Returns the current acceleration rate (in G).
  */
-float AHRS::GetRawAccelY() const {
+float AHRS::GetRawAccelY(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return this->raw_accel_y / (DEV_UNITS_MAX / (float)accel_fsr_g);
 }
 
@@ -1066,7 +1113,8 @@ float AHRS::GetRawAccelY() const {
  *<p>
  * @return Returns the current acceleration rate (in G).
  */
-float AHRS::GetRawAccelZ() const {
+float AHRS::GetRawAccelZ(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return this->raw_accel_z / (DEV_UNITS_MAX / (float)accel_fsr_g);
 }
 
@@ -1081,7 +1129,8 @@ static const float UTESLA_PER_DEV_UNIT = 0.15f;
  *<p>
  * @return Returns the mag field strength (in uTesla).
  */
-float AHRS::GetRawMagX() const {
+float AHRS::GetRawMagX(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return this->cal_mag_x / UTESLA_PER_DEV_UNIT;
 }
 
@@ -1094,7 +1143,8 @@ float AHRS::GetRawMagX() const {
  *<p>
  * @return Returns the mag field strength (in uTesla).
  */
-float AHRS::GetRawMagY() const {
+float AHRS::GetRawMagY(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return this->cal_mag_y / UTESLA_PER_DEV_UNIT;
 }
 
@@ -1107,7 +1157,8 @@ float AHRS::GetRawMagY() const {
  *<p>
  * @return Returns the mag field strength (in uTesla).
  */
-float AHRS::GetRawMagZ() const {
+float AHRS::GetRawMagZ(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return this->cal_mag_z / UTESLA_PER_DEV_UNIT;
  }
 
@@ -1118,7 +1169,8 @@ float AHRS::GetRawMagZ() const {
  *
  * @return Returns the current barometric pressure (in millibar).
  */
-float AHRS::GetPressure() const {
+float AHRS::GetPressure(void) {
+	std::unique_lock<std::mutex> l(mutex);
     // TODO implement for navX-Aero.
     return 0;
 }
@@ -1133,8 +1185,9 @@ float AHRS::GetPressure() const {
  *<p>
  * @return The current temperature (in degrees centigrade).
  */
-float AHRS::GetTempC() const
+float AHRS::GetTempC(void)
 {
+	std::unique_lock<std::mutex> l(mutex);
     return this->mpu_temp_c;
 }
 
@@ -1150,7 +1203,8 @@ float AHRS::GetTempC() const
  *<p>
  * @return The currently-configured board yaw axis/direction.
  */
-AHRS::BoardYawAxis AHRS::GetBoardYawAxis() const {
+AHRS::BoardYawAxis AHRS::GetBoardYawAxis(void) {
+	std::unique_lock<std::mutex> l(mutex);
     BoardYawAxis yaw_axis;
     short yaw_axis_info = (short)(capability_flags >> 3);
     yaw_axis_info &= 7;
@@ -1186,7 +1240,8 @@ AHRS::BoardYawAxis AHRS::GetBoardYawAxis() const {
  *<p>
  * @return The firmware version in the format [MajorVersion].[MinorVersion]
  */
-std::string AHRS::GetFirmwareVersion() const {
+std::string AHRS::GetFirmwareVersion(void) {
+	std::unique_lock<std::mutex> l(mutex);
     std::ostringstream os;
     os << (int)fw_ver_major << "." << (int)fw_ver_minor;
     std::string fw_version = os.str();
@@ -1198,16 +1253,16 @@ std::string AHRS::GetFirmwareVersion() const {
     /***********************************************************/
 
 
-void AHRS::StartLiveWindowMode() {
+void AHRS::StartLiveWindowMode(void) {
 }
 
-void AHRS::StopLiveWindowMode() {
+void AHRS::StopLiveWindowMode(void) {
 }
 
 /* Are the two following functions still needed? */
 
 
-std::string AHRS::GetSmartDashboardType() const {
+std::string AHRS::GetSmartDashboardType(void) const {
     return "Gyro";
 }
 
@@ -1221,7 +1276,7 @@ std::string AHRS::GetSmartDashboardType() const {
  * to a known angle".
  * @return The current yaw angle in degrees (-180 to 180).
  */
-double AHRS::PIDGet() const {
+double AHRS::PIDGet(void) {
     return GetYaw();
 }
 
@@ -1290,12 +1345,12 @@ bool AHRS::DeregisterCallback( ITimestampedDataSubscriber *callback ) {
  * (cycles per second).
  */
 
-int AHRS::GetActualUpdateRate() const {
+int AHRS::GetActualUpdateRate(void) {
     uint8_t actual_update_rate = GetActualUpdateRateInternal(GetRequestedUpdateRate());
     return (int)actual_update_rate;
 }
 
-uint8_t AHRS::GetActualUpdateRateInternal(uint8_t update_rate) const {
+uint8_t AHRS::GetActualUpdateRateInternal(uint8_t update_rate) {
 #define NAVX_MOTION_PROCESSOR_UPDATE_RATE_HZ 200
     int integer_update_rate = (int)update_rate;
     int realized_update_rate = NAVX_MOTION_PROCESSOR_UPDATE_RATE_HZ /
@@ -1316,10 +1371,11 @@ uint8_t AHRS::GetActualUpdateRateInternal(uint8_t update_rate) const {
  * (cycles per second).
  */
 
-int AHRS::GetRequestedUpdateRate() const {
+int AHRS::GetRequestedUpdateRate(void) {
+	std::unique_lock<std::mutex> l(mutex);
     return (int)update_rate_hz;
 }
 
-void AHRS::Close() {
+void AHRS::Close(void) {
     io->Stop();    
 }
