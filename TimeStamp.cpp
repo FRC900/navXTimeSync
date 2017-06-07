@@ -12,11 +12,14 @@ volatile sig_atomic_t sflag = 0;
 
 void handle_sig(int sig)
 {
+	(void)sig;
     sflag = 1;
 }
 
 
 int main(int argc, char *argv[]) {
+	(void)argc;
+	(void)argv;
     std::cout << "Program Executing\n";
     signal(SIGINT, handle_sig);
 
