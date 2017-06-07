@@ -8,16 +8,17 @@
 #include <sstream>
 #include <string>
 #include <iomanip>
-#include <AHRS.h>
-#include <AHRSProtocol.h>
 #include <ctime>
 #include <pthread.h>
+
+#include "AHRS.h"
+#include "AHRSProtocol.h"
+#include "ContinuousAngleTracker.h"
+#include "IBoardCapabilities.h"
 #include "IIOProvider.h"
 #include "IIOCompleteNotification.h"
-#include "IBoardCapabilities.h"
 #include "InertialDataIntegrator.h"
 #include "OffsetTracker.h"
-#include "ContinuousAngleTracker.h"
 #include "SerialIO.h"
 
 static const uint8_t    NAVX_DEFAULT_UPDATE_RATE_HZ         = 60;
@@ -41,7 +42,7 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
     /* IIOCompleteNotification Interface Implementation        */
     /***********************************************************/
 
-    void SetYawPitchRoll(IMUProtocol::YPRUpdate& ypr_update, long sensor_timestamp) {
+    void SetYawPitchRoll(const IMUProtocol::YPRUpdate& ypr_update, long sensor_timestamp) {
         //printf("Setting pitch value to %f", ypr_update.pitch);
         ahrs->yaw               	= ypr_update.yaw;
         ahrs->pitch             	= ypr_update.pitch;
@@ -50,7 +51,7 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
         ahrs->last_sensor_timestamp	= sensor_timestamp;
     }
 
-    void SetAHRSPosData(AHRSProtocol::AHRSPosUpdate& ahrs_update, long sensor_timestamp) {
+    void SetAHRSPosData(const AHRSProtocol::AHRSPosUpdate& ahrs_update, long sensor_timestamp) {
         /* Update base IMU class variables */
         //printf("Setting pitch to: %f\n", ahrs_update.pitch);
         ahrs->yaw                    = ahrs_update.yaw;
@@ -128,7 +129,7 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
         ahrs->last_sensor_timestamp	= sensor_timestamp;
     }
 
-    void SetRawData(AHRSProtocol::GyroUpdate& raw_data_update, long sensor_timestamp) {
+    void SetRawData(const AHRSProtocol::GyroUpdate& raw_data_update, long sensor_timestamp) {
         ahrs->raw_gyro_x     = raw_data_update.gyro_x;
         ahrs->raw_gyro_y     = raw_data_update.gyro_y;
         ahrs->raw_gyro_z     = raw_data_update.gyro_z;
@@ -142,7 +143,7 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
         ahrs->last_sensor_timestamp	= sensor_timestamp;
     }
 
-    void SetAHRSData(AHRSProtocol::AHRSUpdate& ahrs_update, long sensor_timestamp) {
+    void SetAHRSData(const AHRSProtocol::AHRSUpdate& ahrs_update, long sensor_timestamp) {
         /* Update base IMU class variables */
 
         ahrs->yaw                    = ahrs_update.yaw;
@@ -222,14 +223,14 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
         ahrs->yaw_angle_tracker->NextAngle(ahrs->GetYaw());
     }
 
-    void SetBoardID(AHRSProtocol::BoardID& board_id) {
+    void SetBoardID(const AHRSProtocol::BoardID& board_id) {
         ahrs->board_type = board_id.type;
         ahrs->hw_rev = board_id.hw_rev;
         ahrs->fw_ver_major = board_id.fw_ver_major;
         ahrs->fw_ver_minor = board_id.fw_ver_minor;
     }
 
-    void SetBoardState(IIOCompleteNotification::BoardState& board_state) {
+    void SetBoardState(const IIOCompleteNotification::BoardState& board_state) {
         ahrs->update_rate_hz = board_state.update_rate_hz;
         ahrs->accel_fsr_g = board_state.accel_fsr_g;
         ahrs->gyro_fsr_dps = board_state.gyro_fsr_dps;
@@ -243,22 +244,22 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
     /***********************************************************/
     /* IBoardCapabilities Interface Implementation        */
     /***********************************************************/
-    bool IsOmniMountSupported()
+    bool IsOmniMountSupported(void) const
     {
        return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_OMNIMOUNT) !=0) ? true : false);
     }
 
-    bool IsBoardYawResetSupported()
+    bool IsBoardYawResetSupported(void) const
     {
         return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_YAW_RESET) != 0) ? true : false);
     }
 
-    bool IsDisplacementSupported()
+    bool IsDisplacementSupported(void) const
     {
         return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_VEL_AND_DISP) != 0) ? true : false);
     }
 
-    bool IsAHRSPosTimestampSupported()
+    bool IsAHRSPosTimestampSupported(void) const
     {
     	return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_AHRSPOS_TS) != 0) ? true : false);
     }
@@ -339,7 +340,7 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
      * @param data_type either kProcessedData or kRawData
      * @param update_rate_hz Custom Update Rate (Hz)
      */
-AHRS::AHRS(std::string serial_port_id, AHRS::SerialDataType data_type, uint8_t update_rate_hz) {
+AHRS::AHRS(const std::string &serial_port_id, AHRS::SerialDataType data_type, uint8_t update_rate_hz) {
     SerialInit(serial_port_id, data_type, update_rate_hz);
 }
 
@@ -370,7 +371,7 @@ AHRS::AHRS(std::string serial_port_id, AHRS::SerialDataType data_type, uint8_t u
  *<p>
  * @param serial_port_id SerialPort to use
  */
-AHRS::AHRS(std::string serial_port_id) {
+AHRS::AHRS(const std::string &serial_port_id) {
     SerialInit(serial_port_id, SerialDataType::kProcessedData, NAVX_DEFAULT_UPDATE_RATE_HZ);
 }
 
@@ -380,7 +381,7 @@ AHRS::AHRS(std::string serial_port_id) {
  * the X Axis.
  * @return The current pitch value in degrees (-180 to 180).
  */
-float AHRS::GetPitch() {
+float AHRS::GetPitch() const {
     return pitch;
 }
 
@@ -390,7 +391,7 @@ float AHRS::GetPitch() {
  * the X Axis.
  * @return The current roll value in degrees (-180 to 180).
  */
-float AHRS::GetRoll() {
+float AHRS::GetRoll() const {
     return roll;
 }
 
@@ -404,7 +405,7 @@ float AHRS::GetRoll() {
  * invoking the zeroYaw() method.
  * @return The current yaw value in degrees (-180 to 180).
  */
-float AHRS::GetYaw() {
+float AHRS::GetYaw() const {
     if ( ahrs_internal->IsBoardYawResetSupported() ) {
         return this->yaw;
     } else {
@@ -426,7 +427,7 @@ float AHRS::GetYaw() {
  * was generated.
  * @return The current tilt-compensated compass heading, in degrees (0-360).
  */
-float AHRS::GetCompassHeading() {
+float AHRS::GetCompassHeading() const {
     return compass_heading;
 }
 
@@ -438,7 +439,7 @@ float AHRS::GetCompassHeading() {
  * subtracted from subsequent yaw values reported by
  * the getYaw() method.
  */
-void AHRS::ZeroYaw() {
+void AHRS::ZeroYaw() const {
     if ( ahrs_internal->IsBoardYawResetSupported() ) {
         io->ZeroYaw();
     } else {
@@ -462,7 +463,7 @@ void AHRS::ZeroYaw() {
  * @return Returns true if the sensor is currently automatically
  * calibrating the gyro and accelerometer sensors.
  */
-bool AHRS::IsCalibrating() {
+bool AHRS::IsCalibrating() const {
     return !((cal_status &
                 NAVX_CAL_STATUS_IMU_CAL_STATE_MASK) ==
                     NAVX_CAL_STATUS_IMU_CAL_COMPLETE);
@@ -476,7 +477,7 @@ bool AHRS::IsCalibrating() {
  * @return Returns true if a valid update has been recently received
  * from the sensor.
  */
-bool AHRS::IsConnected() {
+bool AHRS::IsConnected() const {
     return io->IsConnected();
 }
 
@@ -490,7 +491,7 @@ bool AHRS::IsConnected() {
  * misconfiguration.
  * @return The number of bytes received from the sensor.
  */
-double AHRS::GetByteCount() {
+double AHRS::GetByteCount() const {
     return io->GetByteCount();
 }
 
@@ -500,7 +501,7 @@ double AHRS::GetByteCount() {
  * at the same rate indicated by the configured update rate.
  * @return The number of valid updates received from the sensor.
  */
-double AHRS::GetUpdateCount() {
+double AHRS::GetUpdateCount() const {
     return io->GetUpdateCount();
 }
 
@@ -513,7 +514,7 @@ double AHRS::GetUpdateCount() {
  * are used.
  * @return The sensor timestamp corresponding to the current AHRS sensor data.
  */
-long AHRS::GetLastSensorTimestamp() {
+long AHRS::GetLastSensorTimestamp() const {
 	return this->last_sensor_timestamp;
 }
 
@@ -528,7 +529,7 @@ long AHRS::GetLastSensorTimestamp() {
  *<p>
  * @return Current world linear acceleration in the X-axis (in G).
  */
-float AHRS::GetWorldLinearAccelX()
+float AHRS::GetWorldLinearAccelX() const
 {
     return this->world_linear_accel_x;
 }
@@ -544,7 +545,7 @@ float AHRS::GetWorldLinearAccelX()
  *<p>
  * @return Current world linear acceleration in the Y-axis (in G).
  */
-float AHRS::GetWorldLinearAccelY()
+float AHRS::GetWorldLinearAccelY() const
 {
     return this->world_linear_accel_y;
 }
@@ -560,7 +561,7 @@ float AHRS::GetWorldLinearAccelY()
  *<p>
  * @return Current world linear acceleration in the Z-axis (in G).
  */
-float AHRS::GetWorldLinearAccelZ()
+float AHRS::GetWorldLinearAccelZ() const
 {
     return this->world_linear_accel_z;
 }
@@ -573,7 +574,7 @@ float AHRS::GetWorldLinearAccelZ()
  *<p>
  * @return Returns true if the sensor is currently detecting motion.
  */
-bool AHRS::IsMoving()
+bool AHRS::IsMoving() const
 {
     return is_moving;
 }
@@ -589,7 +590,7 @@ bool AHRS::IsMoving()
  *<p>
  * @return Returns true if the sensor is currently detecting motion.
  */
-bool AHRS::IsRotating()
+bool AHRS::IsRotating() const
 {
     return is_rotating;
 }
@@ -602,7 +603,7 @@ bool AHRS::IsRotating()
  * whether this value is valid, see isAltitudeValid().
  * @return Returns current barometric pressure (navX Aero only).
  */
-float AHRS::GetBarometricPressure()
+float AHRS::GetBarometricPressure() const
 {
     return baro_pressure;
 }
@@ -619,7 +620,7 @@ float AHRS::GetBarometricPressure()
  * @return Returns current altitude in meters (as long as the sensor includes
  * an installed on-board pressure sensor).
  */
-float AHRS::GetAltitude()
+float AHRS::GetAltitude() const
 {
     return altitude;
 }
@@ -634,7 +635,7 @@ float AHRS::GetAltitude()
  *<p>
  * @return Returns true if a working pressure sensor is installed.
  */
-bool AHRS::IsAltitudeValid()
+bool AHRS::IsAltitudeValid() const
 {
     return this->altitude_valid;
 }
@@ -654,7 +655,7 @@ bool AHRS::IsAltitudeValid()
  * has recently rotated less than the Compass Noise Bandwidth (~2 degrees).
  * @return Fused Heading in Degrees (range 0-360)
  */
-float AHRS::GetFusedHeading()
+float AHRS::GetFusedHeading() const
 {
     return fused_heading;
 }
@@ -668,7 +669,7 @@ float AHRS::GetFusedHeading()
  * not yet been calibrated; see isMagnetometerCalibrated().
  * @return true if a magnetic disturbance is detected (or the magnetometer is uncalibrated).
  */
-bool AHRS::IsMagneticDisturbance()
+bool AHRS::IsMagneticDisturbance() const
 {
     return magnetic_disturbance;
 }
@@ -684,7 +685,7 @@ bool AHRS::IsMagneticDisturbance()
  *<p>
  * @return Returns true if magnetometer calibration has been performed.
  */
-bool AHRS::IsMagnetometerCalibrated()
+bool AHRS::IsMagnetometerCalibrated() const
 {
     return is_magnetometer_calibrated;
 }
@@ -703,7 +704,7 @@ bool AHRS::IsMagnetometerCalibrated()
  * For more information on Quaternions and their use, please see this <a href=https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation>definition</a>.
  * @return Returns the imaginary portion (W) of the quaternion.
  */
-float AHRS::GetQuaternionW() {
+float AHRS::GetQuaternionW() const {
     return quaternionW;
 }
 /**
@@ -718,11 +719,11 @@ float AHRS::GetQuaternionW() {
  * For more information on Quaternions and their use, please see this <a href=https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation>description</a>.
  * @return Returns the real portion (X) of the quaternion.
  */
-float AHRS::GetQuaternionX() {
+float AHRS::GetQuaternionX() const {
     return quaternionX;
 }
 /**
- * Returns the real portion (X axis) of the Orientation Quaternion which
+ * Returns the real portion (Y axis) of the Orientation Quaternion which
  * fully describes the current sensor orientation with respect to the
  * reference angle defined as the angle at which the yaw was last "zeroed".
  *
@@ -734,13 +735,13 @@ float AHRS::GetQuaternionX() {
  *
  *   https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
  *
- * @return Returns the real portion (X) of the quaternion.
+ * @return Returns the real portion (Y) of the quaternion.
  */
-float AHRS::GetQuaternionY() {
+float AHRS::GetQuaternionY() const {
     return quaternionY;
 }
 /**
- * Returns the real portion (X axis) of the Orientation Quaternion which
+ * Returns the real portion (Z axis) of the Orientation Quaternion which
  * fully describes the current sensor orientation with respect to the
  * reference angle defined as the angle at which the yaw was last "zeroed".
  *
@@ -752,9 +753,9 @@ float AHRS::GetQuaternionY() {
  *
  *   https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
  *
- * @return Returns the real portion (X) of the quaternion.
+ * @return Returns the real portion (Z) of the quaternion.
  */
-float AHRS::GetQuaternionZ() {
+float AHRS::GetQuaternionZ() const {
     return quaternionZ;
 }
 
@@ -792,7 +793,7 @@ void AHRS::UpdateDisplacement( float accel_x_g, float accel_y_g,
  * resulting velocities are not known to be very accurate.
  * @return Current Velocity (in meters/squared).
  */
-float AHRS::GetVelocityX() {
+float AHRS::GetVelocityX() const {
     return (ahrs_internal->IsDisplacementSupported() ? velocity[0] : integrator->GetVelocityX());
 }
 
@@ -804,7 +805,7 @@ float AHRS::GetVelocityX() {
  * resulting velocities are not known to be very accurate.
  * @return Current Velocity (in meters/squared).
  */
-float AHRS::GetVelocityY() {
+float AHRS::GetVelocityY() const {
     return (ahrs_internal->IsDisplacementSupported() ? velocity[1] : integrator->GetVelocityY());
 }
 
@@ -816,7 +817,7 @@ float AHRS::GetVelocityY() {
  * resulting velocities are not known to be very accurate.
  * @return Current Velocity (in meters/squared).
  */
-float AHRS::GetVelocityZ() {
+float AHRS::GetVelocityZ() const {
     return (ahrs_internal->IsDisplacementSupported() ? velocity[2] : 0.f);
 }
 
@@ -830,7 +831,7 @@ float AHRS::GetVelocityZ() {
  * increases quickly as time progresses.
  * @return Displacement since last reset (in meters).
  */
-float AHRS::GetDisplacementX() {
+float AHRS::GetDisplacementX() const {
     return (ahrs_internal->IsDisplacementSupported() ? displacement[0] : integrator->GetVelocityX());
 }
 
@@ -844,7 +845,7 @@ float AHRS::GetDisplacementX() {
  * increases quickly as time progresses.
  * @return Displacement since last reset (in meters).
  */
-float AHRS::GetDisplacementY() {
+float AHRS::GetDisplacementY() const {
     return (ahrs_internal->IsDisplacementSupported() ? displacement[1] : integrator->GetVelocityY());
 }
 
@@ -858,14 +859,12 @@ float AHRS::GetDisplacementY() {
  * increases quickly as time progresses.
  * @return Displacement since last reset (in meters).
  */
-float AHRS::GetDisplacementZ() {
+float AHRS::GetDisplacementZ() const {
     return (ahrs_internal->IsDisplacementSupported() ? displacement[2] : 0.f);
 }
 
-#define NAVX_IO_THREAD_NAME "navXIOThread"
 
-
-void AHRS::SerialInit(std::string serial_port_id, AHRS::SerialDataType data_type, uint8_t update_rate_hz) {
+void AHRS::SerialInit(const std::string &serial_port_id, AHRS::SerialDataType data_type, uint8_t update_rate_hz) {
     commonInit(update_rate_hz);
     bool processed_data = (data_type == SerialDataType::kProcessedData);
     io = new SerialIO(serial_port_id, update_rate_hz, processed_data, ahrs_internal, ahrs_internal);
@@ -967,7 +966,7 @@ void AHRS::commonInit( uint8_t update_rate_hz ) {
  * from the Z-axis (yaw) gyro.
  */
 
-double AHRS::GetAngle() {
+double AHRS::GetAngle() const {
     return yaw_angle_tracker->GetAngle();
 }
 
@@ -979,7 +978,7 @@ double AHRS::GetAngle() {
  * @return The current rate of change in yaw angle (in degrees per second)
  */
 
-double AHRS::GetRate() {
+double AHRS::GetRate() const {
     return yaw_angle_tracker->GetRate();
 }
 
@@ -1004,7 +1003,7 @@ static const float DEV_UNITS_MAX = 32768.0f;
  *<p>
  * @return Returns the current rotation rate (in degrees/sec).
  */
-float AHRS::GetRawGyroX() {
+float AHRS::GetRawGyroX() const {
     return this->raw_gyro_x / (DEV_UNITS_MAX / (float)gyro_fsr_dps);
 }
 
@@ -1016,7 +1015,7 @@ float AHRS::GetRawGyroX() {
  *<p>
  * @return Returns the current rotation rate (in degrees/sec).
  */
-float AHRS::GetRawGyroY() {
+float AHRS::GetRawGyroY() const {
     return this->raw_gyro_y / (DEV_UNITS_MAX / (float)gyro_fsr_dps);
 }
 
@@ -1028,7 +1027,7 @@ float AHRS::GetRawGyroY() {
  *<p>
  * @return Returns the current rotation rate (in degrees/sec).
  */
-float AHRS::GetRawGyroZ() {
+float AHRS::GetRawGyroZ() const {
     return this->raw_gyro_z / (DEV_UNITS_MAX / (float)gyro_fsr_dps);
 }
 
@@ -1041,7 +1040,7 @@ float AHRS::GetRawGyroZ() {
  *<p>
  * @return Returns the current acceleration rate (in G).
  */
-float AHRS::GetRawAccelX() {
+float AHRS::GetRawAccelX() const {
     return this->raw_accel_x / (DEV_UNITS_MAX / (float)accel_fsr_g);
 }
 
@@ -1054,7 +1053,7 @@ float AHRS::GetRawAccelX() {
  *<p>
  * @return Returns the current acceleration rate (in G).
  */
-float AHRS::GetRawAccelY() {
+float AHRS::GetRawAccelY() const {
     return this->raw_accel_y / (DEV_UNITS_MAX / (float)accel_fsr_g);
 }
 
@@ -1067,7 +1066,7 @@ float AHRS::GetRawAccelY() {
  *<p>
  * @return Returns the current acceleration rate (in G).
  */
-float AHRS::GetRawAccelZ() {
+float AHRS::GetRawAccelZ() const {
     return this->raw_accel_z / (DEV_UNITS_MAX / (float)accel_fsr_g);
 }
 
@@ -1082,7 +1081,7 @@ static const float UTESLA_PER_DEV_UNIT = 0.15f;
  *<p>
  * @return Returns the mag field strength (in uTesla).
  */
-float AHRS::GetRawMagX() {
+float AHRS::GetRawMagX() const {
     return this->cal_mag_x / UTESLA_PER_DEV_UNIT;
 }
 
@@ -1095,7 +1094,7 @@ float AHRS::GetRawMagX() {
  *<p>
  * @return Returns the mag field strength (in uTesla).
  */
-float AHRS::GetRawMagY() {
+float AHRS::GetRawMagY() const {
     return this->cal_mag_y / UTESLA_PER_DEV_UNIT;
 }
 
@@ -1108,7 +1107,7 @@ float AHRS::GetRawMagY() {
  *<p>
  * @return Returns the mag field strength (in uTesla).
  */
-float AHRS::GetRawMagZ() {
+float AHRS::GetRawMagZ() const {
     return this->cal_mag_z / UTESLA_PER_DEV_UNIT;
  }
 
@@ -1119,7 +1118,7 @@ float AHRS::GetRawMagZ() {
  *
  * @return Returns the current barometric pressure (in millibar).
  */
-float AHRS::GetPressure() {
+float AHRS::GetPressure() const {
     // TODO implement for navX-Aero.
     return 0;
 }
@@ -1134,7 +1133,7 @@ float AHRS::GetPressure() {
  *<p>
  * @return The current temperature (in degrees centigrade).
  */
-float AHRS::GetTempC()
+float AHRS::GetTempC() const
 {
     return this->mpu_temp_c;
 }
@@ -1151,7 +1150,7 @@ float AHRS::GetTempC()
  *<p>
  * @return The currently-configured board yaw axis/direction.
  */
-AHRS::BoardYawAxis AHRS::GetBoardYawAxis() {
+AHRS::BoardYawAxis AHRS::GetBoardYawAxis() const {
     BoardYawAxis yaw_axis;
     short yaw_axis_info = (short)(capability_flags >> 3);
     yaw_axis_info &= 7;
@@ -1187,7 +1186,7 @@ AHRS::BoardYawAxis AHRS::GetBoardYawAxis() {
  *<p>
  * @return The firmware version in the format [MajorVersion].[MinorVersion]
  */
-std::string AHRS::GetFirmwareVersion() {
+std::string AHRS::GetFirmwareVersion() const {
     std::ostringstream os;
     os << (int)fw_ver_major << "." << (int)fw_ver_minor;
     std::string fw_version = os.str();
@@ -1222,7 +1221,7 @@ std::string AHRS::GetSmartDashboardType() const {
  * to a known angle".
  * @return The current yaw angle in degrees (-180 to 180).
  */
-double AHRS::PIDGet() {
+double AHRS::PIDGet() const {
     return GetYaw();
 }
 
@@ -1291,12 +1290,12 @@ bool AHRS::DeregisterCallback( ITimestampedDataSubscriber *callback ) {
  * (cycles per second).
  */
 
-int AHRS::GetActualUpdateRate() {
+int AHRS::GetActualUpdateRate() const {
     uint8_t actual_update_rate = GetActualUpdateRateInternal(GetRequestedUpdateRate());
     return (int)actual_update_rate;
 }
 
-uint8_t AHRS::GetActualUpdateRateInternal(uint8_t update_rate) {
+uint8_t AHRS::GetActualUpdateRateInternal(uint8_t update_rate) const {
 #define NAVX_MOTION_PROCESSOR_UPDATE_RATE_HZ 200
     int integer_update_rate = (int)update_rate;
     int realized_update_rate = NAVX_MOTION_PROCESSOR_UPDATE_RATE_HZ /
@@ -1317,7 +1316,7 @@ uint8_t AHRS::GetActualUpdateRateInternal(uint8_t update_rate) {
  * (cycles per second).
  */
 
-int AHRS::GetRequestedUpdateRate() {
+int AHRS::GetRequestedUpdateRate() const {
     return (int)update_rate_hz;
 }
 

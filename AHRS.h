@@ -119,71 +119,71 @@ private:
     void *callback_contexts[MAX_NUM_CALLBACKS];
 
 public:
-    AHRS(std::string serial_port_id);
+    AHRS(const std::string &serial_port_id);
 
-    AHRS(std::string serial_port_id, AHRS::SerialDataType data_type, uint8_t update_rate_hz);
+    AHRS(const std::string &serial_port_id, AHRS::SerialDataType data_type, uint8_t update_rate_hz);
 
-    float  GetPitch();
-    float  GetRoll();
-    float  GetYaw();
-    float  GetCompassHeading();
-    void   ZeroYaw();
-    bool   IsCalibrating();
-    bool   IsConnected();
-    double GetByteCount();
-    double GetUpdateCount();
-    long   GetLastSensorTimestamp();
-    float  GetWorldLinearAccelX();
-    float  GetWorldLinearAccelY();
-    float  GetWorldLinearAccelZ();
-    bool   IsMoving();
-    bool   IsRotating();
-    float  GetBarometricPressure();
-    float  GetAltitude();
-    bool   IsAltitudeValid();
-    float  GetFusedHeading();
-    bool   IsMagneticDisturbance();
-    bool   IsMagnetometerCalibrated();
-    float  GetQuaternionW();
-    float  GetQuaternionX();
-    float  GetQuaternionY();
-    float  GetQuaternionZ();
+    float  GetPitch() const;
+    float  GetRoll() const;
+    float  GetYaw() const;
+    float  GetCompassHeading() const;
+    void   ZeroYaw() const;
+    bool   IsCalibrating() const;
+    bool   IsConnected() const;
+    double GetByteCount() const;
+    double GetUpdateCount() const;
+    long   GetLastSensorTimestamp() const;
+    float  GetWorldLinearAccelX() const;
+    float  GetWorldLinearAccelY() const;
+    float  GetWorldLinearAccelZ() const;
+    bool   IsMoving() const;
+    bool   IsRotating() const;
+    float  GetBarometricPressure() const;
+    float  GetAltitude() const;
+    bool   IsAltitudeValid() const;
+    float  GetFusedHeading() const;
+    bool   IsMagneticDisturbance() const;
+    bool   IsMagnetometerCalibrated() const;
+    float  GetQuaternionW() const;
+    float  GetQuaternionX() const;
+    float  GetQuaternionY() const;
+    float  GetQuaternionZ() const;
     void   ResetDisplacement();
     void   UpdateDisplacement( float accel_x_g, float accel_y_g,
                                int update_rate_hz, bool is_moving );
-    float  GetVelocityX();
-    float  GetVelocityY();
-    float  GetVelocityZ();
-    float  GetDisplacementX();
-    float  GetDisplacementY();
-    float  GetDisplacementZ();
-    double GetAngle();
-    double GetRate();
+    float  GetVelocityX() const;
+    float  GetVelocityY() const;
+    float  GetVelocityZ() const;
+    float  GetDisplacementX() const;
+    float  GetDisplacementY() const;
+    float  GetDisplacementZ() const;
+    double GetAngle() const;
+    double GetRate() const;
     void   Reset();
-    float  GetRawGyroX();
-    float  GetRawGyroY();
-    float  GetRawGyroZ();
-    float  GetRawAccelX();
-    float  GetRawAccelY();
-    float  GetRawAccelZ();
-    float  GetRawMagX();
-    float  GetRawMagY();
-    float  GetRawMagZ();
-    float  GetPressure();
-    float  GetTempC();
-    AHRS::BoardYawAxis GetBoardYawAxis();
-    std::string GetFirmwareVersion();
+    float  GetRawGyroX() const;
+    float  GetRawGyroY() const;
+    float  GetRawGyroZ() const;
+    float  GetRawAccelX() const;
+    float  GetRawAccelY() const;
+    float  GetRawAccelZ() const;
+    float  GetRawMagX() const;
+    float  GetRawMagY() const;
+    float  GetRawMagZ() const;
+    float  GetPressure() const;
+    float  GetTempC() const;
+    AHRS::BoardYawAxis GetBoardYawAxis() const;
+    std::string GetFirmwareVersion() const;
 
     bool RegisterCallback( ITimestampedDataSubscriber *callback, void *callback_context);
     bool DeregisterCallback( ITimestampedDataSubscriber *callback );
 
-    int GetActualUpdateRate();
-    int GetRequestedUpdateRate();
+    int GetActualUpdateRate() const;
+    int GetRequestedUpdateRate() const;
 
     void Close();
 
 private:
-    void SerialInit(std::string serial_port_id, AHRS::SerialDataType data_type, uint8_t update_rate_hz);
+    void SerialInit(const std::string &serial_port_id, AHRS::SerialDataType data_type, uint8_t update_rate_hz);
     void commonInit( uint8_t update_rate_hz );
     static void *ThreadFunc(void *threadarg);
 
@@ -193,9 +193,9 @@ private:
     void StopLiveWindowMode();
 
     /* PIDSource implementation */
-    double PIDGet();
+    double PIDGet() const;
 
-    uint8_t GetActualUpdateRateInternal(uint8_t update_rate);
+    uint8_t GetActualUpdateRateInternal(uint8_t update_rate) const;
 };
 
 #endif /* SRC_AHRS_H_ */
