@@ -25,8 +25,6 @@ THE SOFTWARE.
 #ifndef IMU_REGISTERS_H_
 #define IMU_REGISTERS_H_
 
-#include "IMUProtocol.h"
-
 /*******************************************************************/
 /*******************************************************************/
 /*                      Register Definitions                       */
@@ -406,16 +404,14 @@ public:
         encodeProtocolInt32(packed_float, uint8_16_16_bytes);
     }
 
-#define CRC7_POLY 0x91
+#define CRC7_POLY ((uint8_t)0x91)
 
     static void buildCRCLookupTable( uint8_t* table, size_t length )
     {
-        size_t crc;
-        size_t i, j;
         if ( length == 256 ) {
-            for ( i = 0; i < length; i++ ) {
-                crc = (uint8_t)i;
-                for (j = 0; j < 8; j++) {
+            for (size_t i = 0; i < length; i++ ) {
+                uint8_t crc = (uint8_t)i;
+                for (size_t j = 0; j < 8; j++) {
                     if (crc & 1) {
                         crc ^= CRC7_POLY;
                     }
@@ -426,11 +422,11 @@ public:
         }
     }
 
-    static inline uint8_t getCRCWithTable( const uint8_t* table, const uint8_t* message, uint8_t length )
+    static inline uint8_t getCRCWithTable( const uint8_t* table, const uint8_t* message, size_t length )
     {
-        uint8_t i, crc = 0;
+		uint8_t crc = 0;
 
-        for (i = 0; i < length; i++)
+        for (size_t i = 0; i < length; i++)
         {
             crc ^= message[i];
             crc = table[crc];
@@ -438,14 +434,14 @@ public:
         return crc;
     }
 
-    static uint8_t getCRC( const uint8_t* message, uint8_t length)
+    static uint8_t getCRC( const uint8_t* message, size_t length )
     {
-        uint8_t i, j, crc = 0;
+		uint8_t crc = 0;
 
-        for (i = 0; i < length; i++)
+        for (size_t i = 0; i < length; i++)
         {
             crc ^= message[i];
-            for (j = 0; j < 8; j++)
+            for (int j = 0; j < 8; j++)
             {
                 if (crc & 1) {
                     crc ^= CRC7_POLY;
@@ -456,6 +452,5 @@ public:
         return crc;
     }
 };
-
 
 #endif /* IMU_REGISTERS_H_ */
