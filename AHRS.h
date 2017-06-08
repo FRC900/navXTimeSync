@@ -11,6 +11,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <pthread.h>
 
 #include "ITimestampedDataSubscriber.h"
 
@@ -69,10 +70,10 @@ private:
     bool       altitude_valid;
     bool       is_magnetometer_calibrated;
     bool       magnetic_disturbance;
-    float    	quaternionW;
-    float    	quaternionX;
-    float    	quaternionY;
-    float    	quaternionZ;
+    float      quaternionW;
+    float      quaternionX;
+    float      quaternionY;
+    float      quaternionZ;
 
     /* Integrated Data */
     float velocity[3];
@@ -109,6 +110,7 @@ private:
     long       last_sensor_timestamp;
     double     last_update_time;
 
+	pthread_t  trd;
 	std::mutex mutex;
 
     InertialDataIntegrator *integrator;
@@ -176,6 +178,8 @@ public:
     float  GetTempC(void);
     AHRS::BoardYawAxis GetBoardYawAxis(void);
     std::string GetFirmwareVersion(void);
+
+	void GetRPYQAccel(float &r, float &p, float &y, float &qx, float &qy, float &qz, float &qw, float &ax, float &ay, float &az, long &stamp);
 
     bool RegisterCallback( ITimestampedDataSubscriber *callback, void *callback_context);
     bool DeregisterCallback( ITimestampedDataSubscriber *callback );

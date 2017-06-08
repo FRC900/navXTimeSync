@@ -9,7 +9,6 @@
 #include <string>
 #include <iomanip>
 #include <ctime>
-#include <pthread.h>
 
 #include "AHRS.h"
 #include "AHRSProtocol.h"
@@ -49,6 +48,10 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
         ahrs->pitch             	= ypr_update.pitch;
         ahrs->roll              	= ypr_update.roll;
         ahrs->compass_heading   	= ypr_update.compass_heading;
+
+        ahrs->yaw_offset_tracker->UpdateHistory(ypr_update.yaw);
+        ahrs->yaw_angle_tracker->NextAngle(ypr_update.yaw);
+
         ahrs->last_sensor_timestamp	= sensor_timestamp;
     }
 
@@ -104,12 +107,10 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
                         NAVX_SENSOR_STATUS_MAG_DISTURBANCE) != 0)
                         ? true : false);
 
-        ahrs->quaternionW                = ahrs_update.quat_w;
-        ahrs->quaternionX                = ahrs_update.quat_x;
-        ahrs->quaternionY                = ahrs_update.quat_y;
-        ahrs->quaternionZ                = ahrs_update.quat_z;
-
-        ahrs->last_sensor_timestamp	= sensor_timestamp;
+        ahrs->quaternionW     = ahrs_update.quat_w;
+        ahrs->quaternionX     = ahrs_update.quat_x;
+        ahrs->quaternionY     = ahrs_update.quat_y;
+        ahrs->quaternionZ     = ahrs_update.quat_z;
 
         ahrs->velocity[0]     = ahrs_update.vel_x;
         ahrs->velocity[1]     = ahrs_update.vel_y;
@@ -213,6 +214,11 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
         ahrs->quaternionZ                = ahrs_update.quat_z;
 
         ahrs->last_sensor_timestamp	= sensor_timestamp;
+
+        ahrs->UpdateDisplacement( ahrs->world_linear_accel_x,
+                ahrs->world_linear_accel_y,
+                ahrs->update_rate_hz,
+                ahrs->is_moving);
 		}
 
         /* Notify external data arrival subscribers, if any. */
@@ -227,10 +233,6 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
             }
         }
 
-        ahrs->UpdateDisplacement( ahrs->world_linear_accel_x,
-                ahrs->world_linear_accel_y,
-                ahrs->update_rate_hz,
-                ahrs->is_moving);
 
     }
 
@@ -259,21 +261,25 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
     /***********************************************************/
     bool IsOmniMountSupported(void)
     {
-       return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_OMNIMOUNT) !=0) ? true : false);
+		std::unique_lock<std::mutex> l(ahrs->mutex);
+		return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_OMNIMOUNT) !=0) ? true : false);
     }
 
     bool IsBoardYawResetSupported(void)
     {
+		std::unique_lock<std::mutex> l(ahrs->mutex);
         return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_YAW_RESET) != 0) ? true : false);
     }
 
     bool IsDisplacementSupported(void)
     {
+		std::unique_lock<std::mutex> l(ahrs->mutex);
         return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_VEL_AND_DISP) != 0) ? true : false);
     }
 
     bool IsAHRSPosTimestampSupported(void)
     {
+		std::unique_lock<std::mutex> l(ahrs->mutex);
     	return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_AHRSPOS_TS) != 0) ? true : false);
     }
 };
@@ -421,11 +427,12 @@ float AHRS::GetRoll(void) {
  * @return The current yaw value in degrees (-180 to 180).
  */
 float AHRS::GetYaw(void) {
-	std::unique_lock<std::mutex> l(mutex);
     if ( ahrs_internal->IsBoardYawResetSupported() ) {
+		std::unique_lock<std::mutex> l(mutex);
         return this->yaw;
     } else {
-        return (float) yaw_offset_tracker->ApplyOffset(this->yaw);
+		std::unique_lock<std::mutex> l(mutex);
+		return (float) yaw_offset_tracker->ApplyOffset(this->yaw);
     }
 }
 
@@ -460,6 +467,7 @@ void AHRS::ZeroYaw(void) {
     if ( ahrs_internal->IsBoardYawResetSupported() ) {
         io->ZeroYaw();
     } else {
+		std::unique_lock<std::mutex> l(mutex);
         yaw_offset_tracker->SetOffset();
     }
 }
@@ -793,6 +801,24 @@ float AHRS::GetQuaternionZ(void) {
     return this->quaternionZ;
 }
 
+// Grab data needed for full IMU message in 
+// one shot
+void AHRS::GetRPYQAccel(float &r, float &p, float &y, float &qx, float &qy, float &qz, float &qw, float &ax, float &ay, float &az, long &stamp)
+{
+	std::unique_lock<std::mutex> l(mutex);
+	r = this->roll;
+	p = this->pitch;
+	y = this->yaw;
+	qx = this->quaternionX;
+	qy = this->quaternionY;
+	qz = this->quaternionZ;
+	qw = this->quaternionW;
+	ax = this->world_linear_accel_x;
+	ay = this->world_linear_accel_y;
+	az = this->world_linear_accel_z;
+	stamp = this->last_sensor_timestamp;
+}
+
 /**
  * Zeros the displacement integration variables.   Invoke this at the moment when
  * integration begins.
@@ -908,7 +934,6 @@ void AHRS::SerialInit(const std::string &serial_port_id, AHRS::SerialDataType da
     commonInit(update_rate_hz);
     bool processed_data = (data_type == SerialDataType::kProcessedData);
     io = new SerialIO(serial_port_id, update_rate_hz, processed_data, ahrs_internal, ahrs_internal);
-    pthread_t trd;
     pthread_create(&trd, NULL, AHRS::ThreadFunc, io);
 }
 
@@ -1204,10 +1229,13 @@ float AHRS::GetTempC(void)
  * @return The currently-configured board yaw axis/direction.
  */
 AHRS::BoardYawAxis AHRS::GetBoardYawAxis(void) {
-	std::unique_lock<std::mutex> l(mutex);
-    BoardYawAxis yaw_axis;
-    short yaw_axis_info = (short)(capability_flags >> 3);
+	short yaw_axis_info;
+	{
+		std::unique_lock<std::mutex> l(mutex);
+		yaw_axis_info = (short)(capability_flags >> 3);
+	}
     yaw_axis_info &= 7;
+    BoardYawAxis yaw_axis;
     if ( yaw_axis_info == OMNIMOUNT_DEFAULT) {
         yaw_axis.up = true;
         yaw_axis.board_axis = BoardAxis::kBoardAxisZ;
@@ -1378,4 +1406,5 @@ int AHRS::GetRequestedUpdateRate(void) {
 
 void AHRS::Close(void) {
     io->Stop();    
+	pthread_join(trd, NULL);
 }
