@@ -267,19 +267,16 @@ class AHRSInternal : public IIOCompleteNotification, public IBoardCapabilities {
 
     bool IsBoardYawResetSupported(void)
     {
-		std::unique_lock<std::mutex> l(ahrs->mutex);
         return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_YAW_RESET) != 0) ? true : false);
     }
 
     bool IsDisplacementSupported(void)
     {
-		std::unique_lock<std::mutex> l(ahrs->mutex);
         return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_VEL_AND_DISP) != 0) ? true : false);
     }
 
     bool IsAHRSPosTimestampSupported(void)
     {
-		std::unique_lock<std::mutex> l(ahrs->mutex);
     	return (((ahrs->capability_flags & NAVX_CAPABILITY_FLAG_AHRSPOS_TS) != 0) ? true : false);
     }
 };
@@ -427,11 +424,10 @@ float AHRS::GetRoll(void) {
  * @return The current yaw value in degrees (-180 to 180).
  */
 float AHRS::GetYaw(void) {
+	std::unique_lock<std::mutex> l(mutex);
     if ( ahrs_internal->IsBoardYawResetSupported() ) {
-		std::unique_lock<std::mutex> l(mutex);
         return this->yaw;
     } else {
-		std::unique_lock<std::mutex> l(mutex);
 		return (float) yaw_offset_tracker->ApplyOffset(this->yaw);
     }
 }
@@ -464,10 +460,10 @@ float AHRS::GetCompassHeading(void) {
  * the getYaw() method.
  */
 void AHRS::ZeroYaw(void) {
+	std::unique_lock<std::mutex> l(mutex);
     if ( ahrs_internal->IsBoardYawResetSupported() ) {
         io->ZeroYaw();
     } else {
-		std::unique_lock<std::mutex> l(mutex);
         yaw_offset_tracker->SetOffset();
     }
 }
@@ -824,6 +820,7 @@ void AHRS::GetRPYQAccel(float &r, float &p, float &y, float &qx, float &qy, floa
  * integration begins.
  */
 void AHRS::ResetDisplacement(void) {
+	std::unique_lock<std::mutex> l(mutex);
     if (ahrs_internal->IsDisplacementSupported() ) {
         io->ZeroDisplacement();
     }
