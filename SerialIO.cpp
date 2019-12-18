@@ -46,7 +46,7 @@ SerialPort *SerialIO::ResetSerialPort(void)
     if (serial_port != 0) {
         try {
             delete serial_port;
-        } catch (std::exception  ex) {
+        } catch (std::exception &ex) {
             // This has been seen to happen before....
         }
         serial_port = 0;
@@ -64,7 +64,7 @@ SerialPort *SerialIO::GetMaybeCreateSerialPort(void)
             serial_port->SetTimeout(1.0);
             serial_port->EnableTermination('\n');
             serial_port->Reset();
-        } catch (std::exception ex) {
+        } catch (std::exception &ex) {
             printf("ERROR Opening Serial Port!\n");
             serial_port = 0;
         }
@@ -156,7 +156,7 @@ void SerialIO::Run(void) {
         serial_port->EnableTermination('\n');
         serial_port->Flush();
         serial_port->Reset();
-    } catch (std::exception ex) {
+    } catch (std::exception &ex) {
         printf("SerialPort Run() Port Initialization Exception:  %s\n", ex.what());
     }
 
@@ -178,7 +178,7 @@ void SerialIO::Run(void) {
         serial_port->Flush();
         port_reset_count++;
         last_stream_command_sent_timestamp = time(0);
-    } catch (std::exception ex) {
+    } catch (std::exception &ex) {
         printf("SerialPort Run() Port Send Encode Stream Command Exception:  %s\n", ex.what());
     }
 
@@ -204,7 +204,7 @@ void SerialIO::Run(void) {
                     //std::cout << "No idea where this write is..." << std::endl;
 		    //DEBUG-TODO: Determine if this is needed
                     //serial_port->Write( integration_control_command, cmd_packet_length );
-                } catch (std::exception ex) {
+                } catch (std::exception &ex) {
                     printf("SerialPort Run() IntegrationControl Send Exception:  %s\n", ex.what());
                 }
             }
@@ -442,7 +442,7 @@ void SerialIO::Run(void) {
                         cmd_packet_length = AHRSProtocol::encodeDataGetRequest( stream_command,  AHRS_DATA_TYPE::BOARD_IDENTITY, AHRS_TUNING_VAR_ID::UNSPECIFIED );
                         serial_port->Write( stream_command, cmd_packet_length );
                         serial_port->Flush();
-                    } catch (std::exception ex2) {
+                    } catch (std::exception &ex2) {
                         printf("SerialPort Run() Re-transmit Encode Stream Command Exception:  %s\n", ex2.what());
                     }
                 }
@@ -469,7 +469,7 @@ void SerialIO::Run(void) {
                     ResetSerialPort();
                 }
             }
-        } catch (std::exception ex) {
+        } catch (std::exception &ex) {
             // This exception typically indicates a Timeout, but can also be a buffer overrun error.
             stream_response_received = false;
             timeout_count++;
